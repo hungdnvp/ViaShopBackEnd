@@ -1,5 +1,10 @@
 import db from '../models/index';
 import bcrypt from 'bcryptjs';
+import jwt from "jsonwebtoken";
+require("dotenv").config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const salt = bcrypt.genSaltSync(10);
 
 let checkUserEmail = (userEmail) => {
@@ -67,38 +72,36 @@ let loginService = (email, password) => {
             let isExist = await checkUserEmail(email);
             if (isExist) {
                 let user = await db.User.findOne({      // check mail again
-                    attributes: ['email','username','password','balance','role'],
+                    attributes: ['id','email','username','password','balance','role'],
                     where: { email: email },
                     raw: true
                     })
                 if (user) {
                     let check = await bcrypt.compareSync(password, user.password); // check pass
                     if (check) {
-                        delete user.password;
+                        let data = {id: user.id, email: user.email}
+                        const access_token = jwt.sign(data, JWT_SECRET, { expiresIn: '1h' })
                         resolve({
                             errCode:0,
                             errMessage: 'OK',
-                            user: user
+                            token: access_token
                         })
                     }else{
                         resolve({
                             errCode: 3,
                             errMessage: 'Password is incorrect',
-                            user: {}
                         })
                     }
                 } else {        // mail lose
                     resolve({
                         errCode: 2,
                         errMessage: `Your's Email isn't exist in system.`,
-                        user: {}
                     })
                 }
             } else {
                 resolve({
                     errCode: 1,
                     errMessage: `Your's Email isn't exist in system.`,
-                    user: {}
                 });
             }
         } catch (e) {
@@ -106,7 +109,29 @@ let loginService = (email, password) => {
         }
     })
 }
+
+let getAllUserService = ()=>{
+    return new Promise( async(resolve,reject) =>{
+        try{
+            // check email
+            let users = await db.User.findAll({
+                where: {role: 'user'},
+                attributes: {
+                    exclude: ['password']
+                }
+            })
+                resolve({
+                    errCode: 0,
+                    errMessage: 'OK',
+                    data: users
+                })
+            }catch(e){
+                reject(e);
+            }
+    })
+}
 module.exports = {
     registerService: registerService,
-    loginService: loginService
+    loginService: loginService,
+    getAllUserService: getAllUserService,
 }
