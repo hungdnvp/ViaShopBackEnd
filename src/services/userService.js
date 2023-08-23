@@ -1,6 +1,6 @@
 import db from "../models/index";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { createToken } from "../middleware/JWTAction";
 require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -12,6 +12,22 @@ let checkUserEmail = (userEmail) => {
     try {
       let user = await db.User.findOne({
         where: { email: userEmail },
+      });
+      if (user) {
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+let checkUserName = (username) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let user = await db.User.findOne({
+        where: { username: username },
       });
       if (user) {
         resolve(true);
@@ -65,22 +81,13 @@ let registerService = (data) => {
   });
 };
 
-let loginService = (email, password) => {
+let loginService = (username, password) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let isExist = await checkUserEmail(email);
-      if (isExist) {
+      let isExistUserName = await checkUserName(username);
+      if (isExistUserName) {
         let user = await db.User.findOne({
-          // check mail again
-          attributes: [
-            "id",
-            "email",
-            "username",
-            "password",
-            "balance",
-            "role",
-          ],
-          where: { email: email },
+          where: { username: username },
           raw: true,
         });
         if (user) {
@@ -91,13 +98,13 @@ let loginService = (email, password) => {
               email: user.email,
               balance: user.balance,
             };
-            const access_token = jwt.sign(data, JWT_SECRET, {
-              expiresIn: "1h",
-            });
+            let access_token = createToken(data);
+            delete user.password;
             resolve({
               errCode: 0,
               errMessage: "OK",
               token: access_token,
+              user: user,
             });
           } else {
             resolve({
@@ -144,8 +151,34 @@ let getAllUserService = () => {
     }
   });
 };
+let getAccountInfoService = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    if (!userId) resolve({ errCode: 1, errMessage: "missing parameter" });
+    try {
+      let user = await db.User.findOne({
+        where: { id: userId },
+        attributes: {
+          exclude: ["password"],
+        },
+      });
+      if (user) {
+        console.log(user);
+        resolve({
+          errCode: 0,
+          errMessage: "get info User success",
+          user: user,
+        });
+      } else {
+        resolve({ errCode: 1, errMessage: "userId not found" });
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
 module.exports = {
   registerService: registerService,
   loginService: loginService,
   getAllUserService: getAllUserService,
+  getAccountInfoService: getAccountInfoService,
 };
