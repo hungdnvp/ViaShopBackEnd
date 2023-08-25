@@ -1,8 +1,14 @@
 import userService from "../services/userService";
 
 let handleRegister = async (req, res) => {
-  let message = await userService.registerService(req.body);
-  return res.status(200).json(message);
+  try {
+    let message = await userService.registerService(req.body);
+    return res.status(200).json(message);
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ errCode: -1, errMessage: "Error from server" });
+  }
 };
 
 let handleLogin = async (req, res) => {
@@ -15,25 +21,28 @@ let handleLogin = async (req, res) => {
       errMessage: "Missing inputs parameter !",
     });
   }
-  let Data = await userService.loginService(username, password);
-  if (Data.errCode === 0) {
-    return res
-      .cookie("access_token", Data.token, { httpOnly: true })
-      .status(200)
-      .json({
-        errCode: 0,
-        errMessage: "login success",
-        user: Data.user,
-      });
-  }
-  return res.status(201).json(Data);
+  try {
+    let Data = await userService.loginService(username, password);
+    if (Data.errCode === 0) {
+      return res
+        .cookie("access_token", Data.token, { httpOnly: true })
+        .status(200)
+        .json({
+          errCode: 0,
+          errMessage: "login success",
+          user: Data.user,
+        });
+    } else {
+      return res.status(201).json(Data);
+    }
+  } catch (e) {}
 };
 let getAllUser = async (req, res) => {
   try {
     let data = await userService.getAllUserService();
     return res.status(200).json(data);
   } catch (err) {
-    return res.status(200).json({
+    return res.status(500).json({
       errCode: -1,
       errMessage: "Error from server",
     });
@@ -45,17 +54,27 @@ let handleLogOut = async (req, res) => {
     errMessage: "logout success",
   });
 };
-let getAccountInfo = async (req, res) => {
-  console.log(req);
-  let userId = req.query.userId;
-  try {
-    let data = await userService.getAccountInfo(userId);
-    return res.status(200).json(data);
-  } catch (e) {
-    return res.status(500).json({
-      errCode: -1,
-      errMessage: "Error from server",
-    });
+let handleChangePassword = async (req, res) => {
+  let userId = req.body.userId;
+  let currentPass = req.body.currentPass;
+  let newPass = req.body.newPass;
+  if (!currentPass || !newPass || !userId) {
+    return res
+      .status(200)
+      .json({ errCode: 1, errMessage: "Missing require parameter" });
+  } else {
+    try {
+      let data = await userService.changePasswordService(
+        userId,
+        currentPass,
+        newPass
+      );
+      return res.status(200).json(data);
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ errCode: -1, errMessage: "Error from server" });
+    }
   }
 };
 module.exports = {
@@ -63,5 +82,5 @@ module.exports = {
   handleRegister: handleRegister,
   getAllUser: getAllUser,
   handleLogOut,
-  getAccountInfo: getAccountInfo,
+  handleChangePassword: handleChangePassword,
 };

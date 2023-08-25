@@ -12,7 +12,7 @@ let initWebRoutes = (app) => {
   router.post("/api/login", userController.handleLogin);
   router.post("/api/register", userController.handleRegister);
   router.get("/api/logout", userController.handleLogOut);
-  router.get("/api/getAccountInfo", userController.getAccountInfo);
+  router.post("/api/changePassword", userController.handleChangePassword);
   // *********API********************// ADMIN????????????
 
   router.get("api/getAllUser", userController.getAllUser);

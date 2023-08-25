@@ -151,25 +151,40 @@ let getAllUserService = () => {
     }
   });
 };
-let getAccountInfoService = (userId) => {
+let changePasswordService = (userId, currentPass, newPass) => {
   return new Promise(async (resolve, reject) => {
-    if (!userId) resolve({ errCode: 1, errMessage: "missing parameter" });
     try {
+      // check email
       let user = await db.User.findOne({
         where: { id: userId },
-        attributes: {
-          exclude: ["password"],
-        },
+        raw: true,
       });
       if (user) {
-        console.log(user);
-        resolve({
-          errCode: 0,
-          errMessage: "get info User success",
-          user: user,
-        });
+        let check = await bcrypt.compareSync(currentPass, user.password); // check pass
+        if (check) {
+          let hasNewPass = await hashPassword(newPass);
+          await db.User.update(
+            {
+              password: hasNewPass,
+            },
+            { where: { id: userId } }
+          );
+
+          resolve({
+            errCode: 0,
+            errMessage: "Đổi mật khẩu thành công",
+          });
+        } else {
+          resolve({
+            errCode: 1,
+            errMessage: "Mật khẩu hiện tại không chính xác",
+          });
+        }
       } else {
-        resolve({ errCode: 1, errMessage: "userId not found" });
+        resolve({
+          errCode: 1,
+          errMessage: "Error from server",
+        });
       }
     } catch (e) {
       reject(e);
@@ -180,5 +195,5 @@ module.exports = {
   registerService: registerService,
   loginService: loginService,
   getAllUserService: getAllUserService,
-  getAccountInfoService: getAccountInfoService,
+  changePasswordService: changePasswordService,
 };
