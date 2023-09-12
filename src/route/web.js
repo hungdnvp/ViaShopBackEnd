@@ -1,21 +1,21 @@
 import express from "express";
-import authMiddleware from "../middleware/JWTAction";
 import userController from "../controllers/userController";
+import authMiddleware from "../middleware/authentication";
 let router = express.Router();
 
-function checkToken(req, res, next) {
-  const nonCheckPath = ["/api/login", "/api/register"];
-  if (nonCheckPath.includes(req.path)) return next();
-}
 let initWebRoutes = (app) => {
   // *********API********************// USER????????????
+  router.use(authMiddleware);
   router.post("/api/login", userController.handleLogin);
   router.post("/api/register", userController.handleRegister);
   router.get("/api/logout", userController.handleLogOut);
   router.post("/api/changePassword", userController.handleChangePassword);
+  router.get("/api/autoLogin", userController.handleAutoLogin);
+  // router.get("/api/getAccountInfo", userController.getAccountInfo);
   // *********API********************// ADMIN????????????
 
   router.get("api/getAllUser", userController.getAllUser);
+
   return app.use("/", router);
 };
 

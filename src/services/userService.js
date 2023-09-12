@@ -1,6 +1,7 @@
 import db from "../models/index";
 import bcrypt from "bcryptjs";
 import { createToken } from "../middleware/JWTAction";
+import moment from "moment";
 require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -100,22 +101,24 @@ let loginService = (username, password) => {
             };
             let access_token = createToken(data);
             delete user.password;
+            delete user.updatedAt;
+            let formatDate = moment(user.createdAt).format("YYYY-MM-DD");
+            user.createdAt = formatDate;
             resolve({
               errCode: 0,
-              errMessage: "OK",
               token: access_token,
               user: user,
             });
           } else {
             resolve({
-              errCode: 3,
+              errCode: 2,
               errMessage: "Password is incorrect",
             });
           }
         } else {
           // mail lose
           resolve({
-            errCode: 2,
+            errCode: 1,
             errMessage: `Your's Email isn't exist in system.`,
           });
         }
@@ -191,9 +194,38 @@ let changePasswordService = (userId, currentPass, newPass) => {
     }
   });
 };
+// let getAccountInfo = (userId) => {
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       let userInfo = await db.User.findOne({
+//         where: { id: userId },
+//         attributes: {
+//           exclude: ["password", "updatedAt"],
+//         },
+//       });
+//       if (userInfo) {
+//         let formatDate = moment(userInfo.createdAt).format("YYYY-MM-DD");
+//         userInfo.createdAt = formatDate;
+//         resolve({
+//           errCode: 0,
+//           errMessage: "success",
+//           data: userInfo,
+//         });
+//       } else {
+//         resolve({
+//           errCode: 1,
+//           errMessage: "account not found",
+//         });
+//       }
+//     } catch (e) {
+//       reject(e);
+//     }
+//   });
+// };
 module.exports = {
   registerService: registerService,
   loginService: loginService,
   getAllUserService: getAllUserService,
   changePasswordService: changePasswordService,
+  // getAccountInfo: getAccountInfo,
 };

@@ -13,11 +13,11 @@ const createToken = (data, expire = "1d") => {
 };
 
 const verifyToken = (token) => {
-  let result = { check: false, data: {} };
+  let result = { isValid: false, data: {} };
   if (token) {
     try {
       let verify = jwt.verify(token, JWT_SECRET);
-      result.check = true;
+      result.isValid = true;
       result.data = verify;
     } catch (err) {
       console.log("error verify token");

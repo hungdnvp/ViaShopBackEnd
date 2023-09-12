@@ -9,7 +9,18 @@ require("dotenv").config();
 
 let app = express();
 //config app
-app.use(cors({ origin: process.env.URL_FONT_END, credentials: true }));
+app.use(
+  cors({
+    origin: process.env.URL_FONT_END,
+    credentials: true,
+    allowedHeaders: [
+      "set-cookie",
+      "Content-Type",
+      "Access-Control-Allow-Origin",
+      "Access-Control-Allow-Credentials",
+    ],
+  })
+);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
