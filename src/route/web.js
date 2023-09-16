@@ -11,7 +11,9 @@ let initWebRoutes = (app) => {
   router.get("/api/logout", userController.handleLogOut);
   router.post("/api/changePassword", userController.handleChangePassword);
   router.get("/api/autoLogin", userController.handleAutoLogin);
-  // router.get("/api/getAccountInfo", userController.getAccountInfo);
+
+  router.get("/refresh", userController.handleRefreshToken);
+  router.get("/api/getAccountInfo", userController.getAccountInfo);
   // *********API********************// ADMIN????????????
 
   router.get("api/getAllUser", userController.getAllUser);

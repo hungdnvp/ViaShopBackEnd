@@ -1,5 +1,7 @@
 import userService from "../services/userService";
-import { verifyToken } from "../middleware/JWTAction";
+import { verifyToken, createToken } from "../middleware/JWTAction";
+
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 let handleRegister = async (req, res) => {
   try {
@@ -24,24 +26,25 @@ let handleLogin = async (req, res) => {
   }
   try {
     let Data = await userService.loginService(username, password);
-    if (Data.errCode === 0) {
+    if (Data && Data.errCode === 0) {
       return res
-        .cookie("access_token", Data.token, {
+        .cookie("refreshToken", Data.refreshToken, {
           path: "/",
           httpOnly: true,
+          // secure
           sameSite: "Strict",
-          maxAge: 24 * 60 * 60 * 1000,
+          maxAge: 30 * 24 * 60 * 60 * 1000,
         })
         .status(200)
         .json({
-          errCode: 0,
-          errMessage: "login success",
-          user: Data.user,
+          accessToken: Data.accessToken,
         });
     } else {
-      return res.status(201).json(Data);
+      return res.status(401).json(Data);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.log(e);
+  }
 };
 let getAllUser = async (req, res) => {
   try {
@@ -55,28 +58,23 @@ let getAllUser = async (req, res) => {
   }
 };
 let handleLogOut = async (req, res) => {
-  return res.cookie("access_token", {}, { maxAge: 1 }).status(200).json({
+  return res.cookie("refreshToken", {}, { maxAge: 1 }).status(200).json({
     errCode: 0,
     errMessage: "logout success",
   });
 };
 let handleAutoLogin = (req, res) => {
-  const cookie = req.cookies;
-  // if we received no cookies then user needs to login.
-  if (!cookie || cookie === null) {
-    return res.sendStatus(401);
-  } else {
-    let token = cookie.access_token;
-    let checkToken = verifyToken(token);
-    if (checkToken?.isValid) {
-      return res.status(200).json({
-        errCode: 0,
-        errMessage: "authorized",
-      });
-    } else {
-      return res.sendStatus(401);
-    }
-  }
+  const accessToken = createToken({ email: req.email });
+  return res.status(200).json({ accessToken: accessToken });
+};
+let handleRefreshToken = async (req, res) => {
+  console.log("get /refresh token");
+  const cookies = req.cookies;
+  if (!cookies.refreshToken) return res.status(401).json({ errCode: -100 });
+  const refreshToken = cookies.refreshToken;
+  let data = await userService.refreshTokenService(refreshToken); //
+  if (data && data.accessToken) res.json(data);
+  else res.status(403).json({ errCode: -5 });
 };
 let handleChangePassword = async (req, res) => {
   // console.log(req.headers.cookie);
@@ -102,24 +100,23 @@ let handleChangePassword = async (req, res) => {
     }
   }
 };
-// let getAccountInfo = async (req, res) => {
-//   // console.log(req.headers.cookie);
-//   let userId = req.query.userId;
-//   if (!userId) {
-//     return res
-//       .status(200)
-//       .json({ errCode: 1, errMessage: "Missing require parameter" });
-//   } else {
-//     try {
-//       let data = await userService.getAccountInfo(userId);
-//       return res.status(200).json(data);
-//     } catch (e) {
-//       return res
-//         .status(500)
-//         .json({ errCode: -1, errMessage: "Error from server" });
-//     }
-//   }
-// };
+let getAccountInfo = async (req, res) => {
+  let userId = req.query.userId;
+  if (!userId) {
+    return res
+      .status(200)
+      .json({ errCode: 1, errMessage: "Missing require parameter" });
+  } else {
+    try {
+      let data = await userService.getAccountInfo(userId);
+      return res.status(200).json(data);
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ errCode: -1, errMessage: "Error from server" });
+    }
+  }
+};
 module.exports = {
   handleLogin: handleLogin,
   handleRegister: handleRegister,
@@ -127,5 +124,6 @@ module.exports = {
   handleLogOut,
   handleChangePassword: handleChangePassword,
   handleAutoLogin: handleAutoLogin,
-  // getAccountInfo: getAccountInfo,
+  getAccountInfo: getAccountInfo,
+  handleRefreshToken: handleRefreshToken,
 };

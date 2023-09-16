@@ -18,6 +18,7 @@ app.use(
       "Content-Type",
       "Access-Control-Allow-Origin",
       "Access-Control-Allow-Credentials",
+      "Authorization",
     ],
   })
 );

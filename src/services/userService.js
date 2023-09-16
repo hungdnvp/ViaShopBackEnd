@@ -4,8 +4,8 @@ import { createToken } from "../middleware/JWTAction";
 import moment from "moment";
 require("dotenv").config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const jwt = require("jsonwebtoken");
 const salt = bcrypt.genSaltSync(10);
 
 let checkUserEmail = (userEmail) => {
@@ -94,20 +94,56 @@ let loginService = (username, password) => {
         if (user) {
           let check = await bcrypt.compareSync(password, user.password); // check pass
           if (check) {
-            let data = {
-              id: user.id,
-              email: user.email,
-              balance: user.balance,
-            };
-            let access_token = createToken(data);
-            delete user.password;
-            delete user.updatedAt;
-            let formatDate = moment(user.createdAt).format("YYYY-MM-DD");
-            user.createdAt = formatDate;
+            const accessToken = createToken({ email: user.email }, "12h");
+            const existRefreshToken = await db.RefreshToken.findOne({
+              where: { userId: user.id },
+              attributes: ["refreshToken"],
+            });
+            let New_refreshToken = null;
+            if (existRefreshToken) {
+              // da ton tai token
+              New_refreshToken = existRefreshToken.refreshToken;
+              jwt.verify(
+                existRefreshToken.refreshToken,
+                JWT_REFRESH_SECRET,
+                async (err, decoded) => {
+                  if (err) {
+                    // token het han
+                    const refreshToken = createToken(
+                      { email: user.email },
+                      "30d",
+                      JWT_REFRESH_SECRET
+                    );
+                    New_refreshToken = refreshToken;
+                    // update refreshToken
+                    await db.RefreshToken.update(
+                      {
+                        where: { userId: user.id },
+                      },
+                      { refreshToken: refreshToken }
+                    );
+                  }
+                }
+              );
+            } else {
+              // chua ton tai refreshToken
+              const refreshToken = createToken(
+                { email: user.email },
+                "30d",
+                JWT_REFRESH_SECRET
+              );
+              New_refreshToken = refreshToken;
+              await db.RefreshToken.create({
+                userId: user.id,
+                refreshToken: refreshToken,
+              });
+            }
+
             resolve({
               errCode: 0,
-              token: access_token,
-              user: user,
+              accessToken: accessToken,
+              refreshToken: New_refreshToken,
+              // user: user,
             });
           } else {
             resolve({
@@ -119,13 +155,13 @@ let loginService = (username, password) => {
           // mail lose
           resolve({
             errCode: 1,
-            errMessage: `Your's Email isn't exist in system.`,
+            errMessage: `Email không tồn tại trong hệ thống.`,
           });
         }
       } else {
         resolve({
           errCode: 1,
-          errMessage: `Your's Email isn't exist in system.`,
+          errMessage: `Tên tài khoản không tồn tại trong hệ thống`,
         });
       }
     } catch (e) {
@@ -133,7 +169,36 @@ let loginService = (username, password) => {
     }
   });
 };
+let refreshTokenService = (token) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const foundUser = await db.RefreshToken.findOne({
+        where: { refreshToken: token },
+        include: [
+          {
+            model: db.User,
 
+            as: "userRefreshTokens",
+            attributes: ["email"],
+          },
+        ],
+        raw: true,
+        nest: true,
+      });
+      console.log(foundUser);
+      if (!foundUser) resolve({ errCode: -1 });
+
+      jwt.verify(token, JWT_REFRESH_SECRET, (err, decoded) => {
+        if (err || foundUser.userRefreshTokens.email !== decoded.email)
+          resolve({ errCode: -2 });
+        const accessToken = createToken({ email: decoded.email }, "12h");
+        resolve({ accessToken });
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
 let getAllUserService = () => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -194,38 +259,39 @@ let changePasswordService = (userId, currentPass, newPass) => {
     }
   });
 };
-// let getAccountInfo = (userId) => {
-//   return new Promise(async (resolve, reject) => {
-//     try {
-//       let userInfo = await db.User.findOne({
-//         where: { id: userId },
-//         attributes: {
-//           exclude: ["password", "updatedAt"],
-//         },
-//       });
-//       if (userInfo) {
-//         let formatDate = moment(userInfo.createdAt).format("YYYY-MM-DD");
-//         userInfo.createdAt = formatDate;
-//         resolve({
-//           errCode: 0,
-//           errMessage: "success",
-//           data: userInfo,
-//         });
-//       } else {
-//         resolve({
-//           errCode: 1,
-//           errMessage: "account not found",
-//         });
-//       }
-//     } catch (e) {
-//       reject(e);
-//     }
-//   });
-// };
+let getAccountInfo = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let userInfo = await db.User.findOne({
+        where: { id: userId },
+        attributes: {
+          exclude: ["password", "updatedAt"],
+        },
+      });
+      if (userInfo) {
+        let formatDate = moment(userInfo.createdAt).format("YYYY-MM-DD");
+        userInfo.createdAt = formatDate;
+        resolve({
+          errCode: 0,
+          errMessage: "success",
+          data: userInfo,
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "account not found",
+        });
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
 module.exports = {
   registerService: registerService,
   loginService: loginService,
   getAllUserService: getAllUserService,
   changePasswordService: changePasswordService,
-  // getAccountInfo: getAccountInfo,
+  refreshTokenService: refreshTokenService,
+  getAccountInfo: getAccountInfo,
 };
