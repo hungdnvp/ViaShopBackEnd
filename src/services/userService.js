@@ -143,7 +143,7 @@ let loginService = (username, password) => {
               errCode: 0,
               accessToken: accessToken,
               refreshToken: New_refreshToken,
-              // user: user,
+              email: user.email,
             });
           } else {
             resolve({
@@ -185,14 +185,12 @@ let refreshTokenService = (token) => {
         raw: true,
         nest: true,
       });
-      console.log(foundUser);
       if (!foundUser) resolve({ errCode: -1 });
-
       jwt.verify(token, JWT_REFRESH_SECRET, (err, decoded) => {
         if (err || foundUser.userRefreshTokens.email !== decoded.email)
           resolve({ errCode: -2 });
         const accessToken = createToken({ email: decoded.email }, "12h");
-        resolve({ accessToken });
+        resolve({ accessToken: accessToken, email: decoded.email });
       });
     } catch (err) {
       reject(err);
@@ -219,13 +217,12 @@ let getAllUserService = () => {
     }
   });
 };
-let changePasswordService = (userId, currentPass, newPass) => {
+let changePasswordService = (email, currentPass, newPass) => {
   return new Promise(async (resolve, reject) => {
     try {
       // check email
       let user = await db.User.findOne({
-        where: { id: userId },
-        raw: true,
+        where: { email: email },
       });
       if (user) {
         let check = await bcrypt.compareSync(currentPass, user.password); // check pass
@@ -235,7 +232,7 @@ let changePasswordService = (userId, currentPass, newPass) => {
             {
               password: hasNewPass,
             },
-            { where: { id: userId } }
+            { where: { email: email } }
           );
 
           resolve({
@@ -259,11 +256,11 @@ let changePasswordService = (userId, currentPass, newPass) => {
     }
   });
 };
-let getAccountInfo = (userId) => {
+let getAccountInfo = (email) => {
   return new Promise(async (resolve, reject) => {
     try {
       let userInfo = await db.User.findOne({
-        where: { id: userId },
+        where: { email: email },
         attributes: {
           exclude: ["password", "updatedAt"],
         },

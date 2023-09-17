@@ -38,6 +38,7 @@ let handleLogin = async (req, res) => {
         .status(200)
         .json({
           accessToken: Data.accessToken,
+          email: Data.email,
         });
     } else {
       return res.status(401).json(Data);
@@ -65,7 +66,7 @@ let handleLogOut = async (req, res) => {
 };
 let handleAutoLogin = (req, res) => {
   const accessToken = createToken({ email: req.email });
-  return res.status(200).json({ accessToken: accessToken });
+  return res.status(200).json({ accessToken: accessToken, email: req.email });
 };
 let handleRefreshToken = async (req, res) => {
   console.log("get /refresh token");
@@ -78,17 +79,17 @@ let handleRefreshToken = async (req, res) => {
 };
 let handleChangePassword = async (req, res) => {
   // console.log(req.headers.cookie);
-  let userId = req.body.userId;
+  let email = req.body.email;
   let currentPass = req.body.currentPass;
   let newPass = req.body.newPass;
-  if (!currentPass || !newPass || !userId) {
+  if (!currentPass || !newPass || !email) {
     return res
       .status(200)
       .json({ errCode: 1, errMessage: "Missing require parameter" });
   } else {
     try {
       let data = await userService.changePasswordService(
-        userId,
+        email,
         currentPass,
         newPass
       );
@@ -101,14 +102,14 @@ let handleChangePassword = async (req, res) => {
   }
 };
 let getAccountInfo = async (req, res) => {
-  let userId = req.query.userId;
-  if (!userId) {
+  let email = req.query.email;
+  if (!email) {
     return res
       .status(200)
       .json({ errCode: 1, errMessage: "Missing require parameter" });
   } else {
     try {
-      let data = await userService.getAccountInfo(userId);
+      let data = await userService.getAccountInfo(email);
       return res.status(200).json(data);
     } catch (e) {
       return res
