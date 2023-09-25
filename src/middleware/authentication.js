@@ -20,7 +20,7 @@ export const autoAuthMiddleware = (req, res, next) => {
 export const loginAuthLimitMiddleware = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes in milliseconds
   max: 10,
-  message: "Bạn đã vượt quá 10 lần thử trong giới hạn 10 phút!",
+  message: "Quá 10 lần trong giới hạn 10 phút!",
   standardHeaders: true,
   legacyHeaders: false,
 });
