@@ -31,6 +31,7 @@ let handleLogin = async (req, res) => {
         .cookie("refreshToken", Data.refreshToken, {
           path: "/",
           httpOnly: true,
+          secure: true,
           // secure
           sameSite: "Strict",
           maxAge: 30 * 24 * 60 * 60 * 1000,
