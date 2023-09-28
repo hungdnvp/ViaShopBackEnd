@@ -29,6 +29,7 @@
     "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
     "mysql2": "^3.3.0",
+    "pg": "^8.11.3",
     "sequelize": "^6.31.1",
     "sequelize-cli": "^6.6.0"
   },

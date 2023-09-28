@@ -5,9 +5,18 @@ const { Sequelize } = require("sequelize");
 const user_mysql = process.env.USER_MYSQL;
 const pass_mysql = process.env.PASS_MYSQL;
 
-const sequelize = new Sequelize("viashop", user_mysql, pass_mysql, {
-  host: "127.0.0.1",
-  dialect: "mysql",
+const user_postgre = process.env.USER_POSTGRE;
+const pass_postgre = process.env.PASS_POSTGRE;
+const host_postgre = process.env.HOST_POSTGRE;
+// const sequelize = new Sequelize("viashop", user_mysql, pass_mysql, {
+//   host: "127.0.0.1",
+//   dialect: "mysql",
+//   logging: false,
+// });
+
+const sequelize = new Sequelize("postgres", user_postgre, pass_postgre, {
+  host: host_postgre,
+  dialect: "postgres",
   logging: false,
 });
 
