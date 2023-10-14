@@ -7,6 +7,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 require("dotenv").config();
 
+const fs = require("fs");
+const https = require("https");
+const port = process.env.PORT || 9090;
+
 let app = express();
 //config app
 app.use(
@@ -29,8 +33,20 @@ app.use(cookieParser());
 viewEngine(app);
 initWebRoutes(app);
 connectDB();
-let port = process.env.PORT || 9090;
-app.listen(port, () => {
-  //callback
-  console.log("backend is running on the port: " + port);
-});
+https
+  .createServer(
+    {
+      key: fs.readFileSync("key.pem"),
+      cert: fs.readFileSync("cert.pem"),
+    },
+    app
+  )
+  .listen(port, () => {
+    //callback
+    console.log("backend is running on the port: " + port);
+  });
+
+// app.listen(port, () => {
+//   //callback
+//   console.log("backend is running on the port: " + port);
+// });

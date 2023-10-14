@@ -1,10 +1,10 @@
 {
   "development": {
-    "username": "postgres",
-    "password": "quangHung12345@",
-    "database": "postgres",
-    "host": "db.dnbmgdvhxcrboujlemgk.supabase.co",
-    "dialect": "postgres",
+    "username": "root",
+    "password": "12345678",
+    "database": "viashop",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
     "logging": false,
     "query": { "raw": true },
     "timezone": "+07:00"
