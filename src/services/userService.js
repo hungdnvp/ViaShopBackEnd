@@ -197,26 +197,7 @@ let refreshTokenService = (token) => {
     }
   });
 };
-let getAllUserService = () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // check email
-      let users = await db.User.findAll({
-        where: { role: "user" },
-        attributes: {
-          exclude: ["password"],
-        },
-      });
-      resolve({
-        errCode: 0,
-        errMessage: "OK",
-        data: users,
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
+
 let changePasswordService = (email, currentPass, newPass) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -287,7 +268,6 @@ let getAccountInfo = (email) => {
 module.exports = {
   registerService: registerService,
   loginService: loginService,
-  getAllUserService: getAllUserService,
   changePasswordService: changePasswordService,
   refreshTokenService: refreshTokenService,
   getAccountInfo: getAccountInfo,

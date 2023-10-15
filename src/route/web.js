@@ -1,5 +1,6 @@
 import express from "express";
 import userController from "../controllers/userController";
+import adminController from "../controllers/adminController";
 import authMiddleware from "../middleware/authentication";
 import {
   autoAuthMiddleware,
@@ -28,7 +29,7 @@ let initWebRoutes = (app) => {
   router.get("/api/getAccountInfo", userController.getAccountInfo);
   // *********API********************// ADMIN????????????
 
-  router.get("api/getAllUser", userController.getAllUser);
+  router.get("/api/getAllUser", adminController.getAllUser);
 
   return app.use("/", router);
 };

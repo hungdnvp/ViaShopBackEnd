@@ -48,17 +48,7 @@ let handleLogin = async (req, res) => {
     console.log(e);
   }
 };
-let getAllUser = async (req, res) => {
-  try {
-    let data = await userService.getAllUserService();
-    return res.status(200).json(data);
-  } catch (err) {
-    return res.status(500).json({
-      errCode: -1,
-      errMessage: "Error from server",
-    });
-  }
-};
+
 let handleLogOut = async (req, res) => {
   return res.cookie("refreshToken", {}, { maxAge: 1 }).status(200).json({
     errCode: 0,
@@ -122,7 +112,6 @@ let getAccountInfo = async (req, res) => {
 module.exports = {
   handleLogin: handleLogin,
   handleRegister: handleRegister,
-  getAllUser: getAllUser,
   handleLogOut,
   handleChangePassword: handleChangePassword,
   handleAutoLogin: handleAutoLogin,
