@@ -66,7 +66,12 @@ let handleRefreshToken = async (req, res) => {
   const refreshToken = cookies.refreshToken;
   let data = await userService.refreshTokenService(refreshToken); //
   if (data && data.accessToken) res.json(data);
-  else res.status(403).json({ errCode: -5 });
+  else {
+    return res.cookie("refreshToken", {}, { maxAge: 1 }).status(200).json({
+      errCode: 0,
+      errMessage: "logout success",
+    });
+  }
 };
 let handleChangePassword = async (req, res) => {
   // console.log(req.headers.cookie);

@@ -55,27 +55,33 @@ let registerService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
       // check email
-      let check = await checkUserEmail(data.email);
-      if (check === true) {
+      let check1 = await checkUserEmail(data.email);
+      if (check1 === true) {
         resolve({
           errCode: 1,
           errMessage: "Your email is already in used, Plz try another email",
         });
-      } else {
-        let hashPass = await hashPassword(data.password);
-        await db.User.create({
-          email: data.email,
-          password: hashPass,
-          username: data.username,
-          phonenumber: data.phonenumber,
-          balance: 0,
-          role: "user",
-        });
+      }
+      let check2 = await checkUserName(data.username);
+      if (check2 === true) {
         resolve({
-          errCode: 0,
-          errMessage: "OK",
+          errCode: 1,
+          errMessage: "Your username is already in used, Plz try another email",
         });
       }
+      let hashPass = await hashPassword(data.password);
+      await db.User.create({
+        email: data.email,
+        password: hashPass,
+        username: data.username,
+        phonenumber: data.phonenumber,
+        balance: 0,
+        role: "user",
+      });
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
     } catch (e) {
       reject(e);
     }
@@ -117,10 +123,10 @@ let loginService = (username, password) => {
                     New_refreshToken = refreshToken;
                     // update refreshToken
                     await db.RefreshToken.update(
+                      { refreshToken: refreshToken },
                       {
                         where: { userId: user.id },
-                      },
-                      { refreshToken: refreshToken }
+                      }
                     );
                   }
                 }
@@ -177,8 +183,6 @@ let refreshTokenService = (token) => {
         include: [
           {
             model: db.User,
-
-            as: "userRefreshTokens",
             attributes: ["email"],
           },
         ],
@@ -187,7 +191,7 @@ let refreshTokenService = (token) => {
       });
       if (!foundUser) resolve({ errCode: -1 });
       jwt.verify(token, JWT_REFRESH_SECRET, (err, decoded) => {
-        if (err || foundUser.userRefreshTokens.email !== decoded.email)
+        if (err || foundUser.User.email !== decoded.email)
           resolve({ errCode: -2 });
         const accessToken = createToken({ email: decoded.email }, "12h");
         resolve({ accessToken: accessToken, email: decoded.email });

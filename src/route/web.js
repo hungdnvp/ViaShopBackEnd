@@ -29,7 +29,7 @@ let initWebRoutes = (app) => {
   router.get("/api/getAccountInfo", userController.getAccountInfo);
   // *********API********************// ADMIN????????????
 
-  router.get("/api/getAllUser", adminController.getAllUser);
+  router.get("/adminApi/getAllUser", adminController.getAllUser);
 
   return app.use("/", router);
 };

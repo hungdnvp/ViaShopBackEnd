@@ -34,15 +34,21 @@ const authMiddleware = (req, res, next) => {
     "/api/logout",
   ];
   if (nonCheckPath.includes(req.path)) return next();
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ errCode: -1 });
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ errCode: -1 }); //invalid token
-    // req.user = decoded.username;
-    next();
-  });
+  else {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ errCode: -1 });
+    const token = authHeader.split(" ")[1];
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if (err) return res.status(403).json({ errCode: -1 }); //invalid token
+      // req.user = decoded.username;
+      if (req.path.includes("adminApi")) {
+        if (decoded.email === "hjghlklj@gmail.com") next();
+        else {
+          return res.status(403).json({ errCode: -1 });
+        }
+      } else next();
+    });
+  }
 };
 
 export default authMiddleware;

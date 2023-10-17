@@ -8,9 +8,8 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      User.hasMany(models.RefreshToken, {
+      User.hasOne(models.RefreshToken, {
         foreignKey: "userId",
-        as: "userRefreshTokens",
       });
     }
     // User.belongsTo(models.Allcode, {foreignKey: 'gender', targetKey:'keyMap', as: 'genderData'})
