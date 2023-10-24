@@ -34,7 +34,50 @@ let getAllUserService = () => {
     }
   });
 };
-
+let addGroupVia = (groupViaName) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await db.GroupVia.create({
+        groupViaName: groupViaName,
+      });
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
+    } catch (e) {
+      console.log("error create group via");
+      console.log(e);
+      reject(e);
+    }
+  });
+};
+let getAllGroupVia = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await db.GroupVia.findAll({
+        attributes: {
+          exclude: ["updatedAt"],
+        },
+      });
+      if (data) {
+        resolve({
+          errCode: 0,
+          data: data,
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "account not found",
+        });
+      }
+    } catch (err) {
+      console.log("get all group via error");
+      reject(err);
+    }
+  });
+};
 module.exports = {
   getAllUserService: getAllUserService,
+  getAllGroupVia: getAllGroupVia,
+  addGroupVia: addGroupVia,
 };

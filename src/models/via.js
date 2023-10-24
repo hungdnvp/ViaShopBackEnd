@@ -1,11 +1,19 @@
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
-  class ViaPublic extends Model {}
-  ViaPublic.init(
+  class Via extends Model {
+    static associate(models) {
+      Via.belongsTo(models.GroupVia, {
+        foreignKey: "groupViaId",
+        targetKey: "id",
+        as: "groupViaData",
+      });
+    }
+  }
+  Via.init(
     {
       nameVia: DataTypes.STRING,
-      categoryViaId: DataTypes.INTEGER, //references CategoryVia
+      groupViaId: DataTypes.INTEGER, //references CategoryVia
       price: DataTypes.INTEGER,
       discountPrice: DataTypes.INTEGER,
       discountCondition: DataTypes.INTEGER,
@@ -14,8 +22,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "ViaPublic",
+      modelName: "Via",
     }
   );
-  return ViaPublic;
+  return Via;
 };
