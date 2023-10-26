@@ -10,7 +10,10 @@ let handleRegister = async (req, res) => {
   } catch (e) {
     return res
       .status(500)
-      .json({ errCode: -1, errMessage: "Error from server" });
+      .json({
+        errCode: -1,
+        errMessage: "lỗi đăng kí, tài khoản hoặc email đã tồn tại!",
+      });
   }
 };
 

@@ -5,14 +5,12 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Via.belongsTo(models.GroupVia, {
         foreignKey: "groupViaId",
-        targetKey: "id",
-        as: "groupViaData",
       });
     }
   }
   Via.init(
     {
-      nameVia: DataTypes.STRING,
+      nameVia: { type: DataTypes.STRING, unique: true },
       groupViaId: DataTypes.INTEGER, //references CategoryVia
       price: DataTypes.INTEGER,
       discountPrice: DataTypes.INTEGER,

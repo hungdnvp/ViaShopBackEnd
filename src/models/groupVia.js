@@ -5,13 +5,12 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       GroupVia.hasMany(models.Via, {
         foreignKey: "groupViaId",
-        as: "groupViaData",
       });
     }
   }
   GroupVia.init(
     {
-      groupViaName: DataTypes.STRING,
+      groupViaName: { type: DataTypes.STRING, unique: true },
     },
     {
       sequelize,

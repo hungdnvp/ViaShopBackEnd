@@ -8,38 +8,6 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const jwt = require("jsonwebtoken");
 const salt = bcrypt.genSaltSync(10);
 
-let checkUserEmail = (userEmail) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let user = await db.User.findOne({
-        where: { email: userEmail },
-      });
-      if (user) {
-        resolve(true);
-      } else {
-        resolve(false);
-      }
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
-let checkUserName = (username) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let user = await db.User.findOne({
-        where: { username: username },
-      });
-      if (user) {
-        resolve(true);
-      } else {
-        resolve(false);
-      }
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
 let hashPassword = (password) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -54,21 +22,6 @@ let hashPassword = (password) => {
 let registerService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
-      // check email
-      let check1 = await checkUserEmail(data.email);
-      if (check1 === true) {
-        resolve({
-          errCode: 1,
-          errMessage: "Your email is already in used, Plz try another email",
-        });
-      }
-      let check2 = await checkUserName(data.username);
-      if (check2 === true) {
-        resolve({
-          errCode: 1,
-          errMessage: "Your username is already in used, Plz try another email",
-        });
-      }
       let hashPass = await hashPassword(data.password);
       await db.User.create({
         email: data.email,
@@ -83,6 +36,7 @@ let registerService = (data) => {
         errMessage: "OK",
       });
     } catch (e) {
+      console.log("create user error");
       reject(e);
     }
   });
@@ -91,77 +45,68 @@ let registerService = (data) => {
 let loginService = (username, password) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let isExistUserName = await checkUserName(username);
-      if (isExistUserName) {
-        let user = await db.User.findOne({
-          where: { username: username },
-          raw: true,
-        });
-        if (user) {
-          let check = await bcrypt.compareSync(password, user.password); // check pass
-          if (check) {
-            const accessToken = createToken({ email: user.email }, "12h");
-            const existRefreshToken = await db.RefreshToken.findOne({
-              where: { userId: user.id },
-              attributes: ["refreshToken"],
-            });
-            let New_refreshToken = null;
-            if (existRefreshToken) {
-              // da ton tai token
-              New_refreshToken = existRefreshToken.refreshToken;
-              jwt.verify(
-                existRefreshToken.refreshToken,
-                JWT_REFRESH_SECRET,
-                async (err, decoded) => {
-                  if (err) {
-                    // token het han
-                    const refreshToken = createToken(
-                      { email: user.email },
-                      "30d",
-                      JWT_REFRESH_SECRET
-                    );
-                    New_refreshToken = refreshToken;
-                    // update refreshToken
-                    await db.RefreshToken.update(
-                      { refreshToken: refreshToken },
-                      {
-                        where: { userId: user.id },
-                      }
-                    );
-                  }
+      let user = await db.User.findOne({
+        where: { username: username },
+        raw: true,
+      });
+      if (user) {
+        let check = await bcrypt.compareSync(password, user.password); // check pass
+        if (check) {
+          const accessToken = createToken({ email: user.email }, "12h");
+          const existRefreshToken = await db.RefreshToken.findOne({
+            where: { userId: user.id },
+            attributes: ["refreshToken"],
+          });
+          let New_refreshToken = null;
+          if (existRefreshToken) {
+            // da ton tai refreshToken -> kiem tra het han
+            New_refreshToken = existRefreshToken.refreshToken;
+            jwt.verify(
+              existRefreshToken.refreshToken,
+              JWT_REFRESH_SECRET,
+              async (err, decoded) => {
+                if (err) {
+                  // token het han
+                  const refreshToken = createToken(
+                    { email: user.email },
+                    "30d",
+                    JWT_REFRESH_SECRET
+                  );
+                  New_refreshToken = refreshToken;
+                  // update refreshToken
+                  await db.RefreshToken.update(
+                    { refreshToken: refreshToken },
+                    {
+                      where: { userId: user.id },
+                    }
+                  );
                 }
-              );
-            } else {
-              // chua ton tai refreshToken
-              const refreshToken = createToken(
-                { email: user.email },
-                "30d",
-                JWT_REFRESH_SECRET
-              );
-              New_refreshToken = refreshToken;
-              await db.RefreshToken.create({
-                userId: user.id,
-                refreshToken: refreshToken,
-              });
-            }
-
-            resolve({
-              errCode: 0,
-              accessToken: accessToken,
-              refreshToken: New_refreshToken,
-              email: user.email,
-            });
+              }
+            );
           } else {
-            resolve({
-              errCode: 2,
-              errMessage: "Password is incorrect",
+            // chua ton tai refreshToken
+            const refreshToken = createToken(
+              { email: user.email },
+              "30d",
+              JWT_REFRESH_SECRET
+            );
+            New_refreshToken = refreshToken;
+            await db.RefreshToken.create({
+              userId: user.id,
+              refreshToken: refreshToken,
             });
           }
-        } else {
-          // mail lose
+
           resolve({
-            errCode: 1,
-            errMessage: `Email không tồn tại trong hệ thống.`,
+            errCode: 0,
+            accessToken: accessToken,
+            refreshToken: New_refreshToken,
+            email: user.email,
+          });
+        } else {
+          resolve({
+            errCode: 2,
+            errMessage: "Password is incorrect",
           });
         }
       } else {

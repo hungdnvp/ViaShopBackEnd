@@ -32,6 +32,9 @@ let initWebRoutes = (app) => {
   router.get("/adminApi/getAllUser", adminController.getAllUser);
   router.get("/adminApi/getAllGroupVia", adminController.getAllGroupVia);
   router.get("/adminApi/addGroupVia", adminController.addGroupVia);
+  router.post("/adminApi/addVia", adminController.addVia);
+  router.get("/adminApi/getAllVia", adminController.getAllVia);
+
   return app.use("/", router);
 };
 

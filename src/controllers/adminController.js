@@ -46,8 +46,35 @@ let getAllGroupVia = async (req, res) => {
     });
   }
 };
+let addVia = async (req, res) => {
+  let data = req.body;
+  try {
+    let response = await adminService.addVia(data);
+    return res.status(200).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
+let getAllVia = async (req, res) => {
+  try {
+    let response = await adminService.getAllVia();
+    if (response?.errCode === 0) {
+      return res.status(200).json(response.data);
+    }
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   getAllUser: getAllUser,
   addGroupVia: addGroupVia,
   getAllGroupVia: getAllGroupVia,
+  addVia: addVia,
+  getAllVia: getAllVia,
 };

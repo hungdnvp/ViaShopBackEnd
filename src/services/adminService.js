@@ -46,7 +46,6 @@ let addGroupVia = (groupViaName) => {
       });
     } catch (e) {
       console.log("error create group via");
-      console.log(e);
       reject(e);
     }
   });
@@ -76,8 +75,64 @@ let getAllGroupVia = () => {
     }
   });
 };
+let addVia = (data) => {
+  return new Promise(async (resolve, reject) => {
+    console.log("data add via:", data);
+    try {
+      await db.Via.create({
+        nameVia: data.nameVia,
+        groupViaId: data.groupViaId,
+        price: data.price,
+        discountPrice: data.discountPrice,
+        discountCondition: data.discountCondition,
+        quantity: 0,
+        descriptions: data.descriptions,
+      });
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
+    } catch (e) {
+      console.log("error create via");
+      reject(e);
+    }
+  });
+};
+let getAllVia = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await db.Via.findAll({
+        attributes: {
+          exclude: ["updatedAt"],
+        },
+        include: {
+          model: db.GroupVia,
+          attributes: ["groupViaName"],
+        },
+        raw: true,
+        nest: true,
+      });
+      if (data) {
+        resolve({
+          errCode: 0,
+          data: data,
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "Via not found or empty",
+        });
+      }
+    } catch (err) {
+      console.log("get all via error");
+      reject(err);
+    }
+  });
+};
 module.exports = {
   getAllUserService: getAllUserService,
   getAllGroupVia: getAllGroupVia,
   addGroupVia: addGroupVia,
+  addVia: addVia,
+  getAllVia: getAllVia,
 };
