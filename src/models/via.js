@@ -6,6 +6,9 @@ module.exports = (sequelize, DataTypes) => {
       Via.belongsTo(models.GroupVia, {
         foreignKey: "groupViaId",
       });
+      Via.hasMany(models.Product, {
+        foreignKey: "viaId",
+      });
     }
   }
   Via.init(

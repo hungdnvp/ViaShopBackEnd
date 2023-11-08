@@ -96,13 +96,22 @@ let loginService = (username, password) => {
               refreshToken: refreshToken,
             });
           }
-
-          resolve({
-            errCode: 0,
-            accessToken: accessToken,
-            refreshToken: New_refreshToken,
-            email: user.email,
-          });
+          if (user.email === process.env.EMAIL_ADMIN) {
+            resolve({
+              errCode: 0,
+              accessToken: accessToken,
+              refreshToken: New_refreshToken,
+              email: user.email,
+              authAdmin: true,
+            });
+          } else {
+            resolve({
+              errCode: 0,
+              accessToken: accessToken,
+              refreshToken: New_refreshToken,
+              email: user.email,
+            });
+          }
         } else {
           resolve({
             errCode: 2,
@@ -139,7 +148,17 @@ let refreshTokenService = (token) => {
         if (err || foundUser.User.email !== decoded.email)
           resolve({ errCode: -2 });
         const accessToken = createToken({ email: decoded.email }, "12h");
-        resolve({ accessToken: accessToken, email: decoded.email });
+        if (decoded.email === process.env.EMAIL_ADMIN) {
+          resolve({
+            accessToken: accessToken,
+            email: decoded.email,
+            authAdmin: true,
+          });
+        } else
+          resolve({
+            accessToken: accessToken,
+            email: decoded.email,
+          });
       });
     } catch (err) {
       reject(err);
@@ -210,7 +229,89 @@ let getAccountInfo = (email) => {
         });
       }
     } catch (e) {
+      console.log("get account info err");
       reject(e);
+    }
+  });
+};
+let getVia = (idGroup) => {
+  return new Promise(async (resolve, reject) => {
+    if (idGroup) {
+      try {
+        let response = await db.Via.findAll({
+          where: { groupViaId: idGroup },
+          attributes: {
+            exclude: "updatedAt",
+          },
+        });
+        resolve({
+          errCode: 0,
+          data: response,
+        });
+      } catch (e) {
+        console.log("user get via by group id err");
+        reject(e);
+      }
+    } else {
+      try {
+        const data = await db.Via.findAll({
+          attributes: {
+            exclude: "updatedAt",
+          },
+        });
+        resolve({
+          errCode: 0,
+          data: data,
+        });
+      } catch (e) {
+        console.log("user get all via err");
+        reject(e);
+      }
+    }
+  });
+};
+let getAllGroupVia = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let data = await db.GroupVia.findAll({
+        attributes: {
+          exclude: ["updatedAt"],
+        },
+      });
+      if (data) {
+        data.forEach((item, index, arr) => {
+          if (item.image) {
+            arr[index].image = Buffer.from(item.image).toString("binary");
+          }
+          // console.log(item.image);
+        });
+
+        resolve({
+          errCode: 0,
+          data: data,
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "account not found",
+        });
+      }
+    } catch (err) {
+      console.log("get all group via error");
+      reject(err);
+    }
+  });
+};
+let payMent = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      resolve({
+        errCode: 0,
+        errMessage: "success",
+      });
+    } catch (err) {
+      console.log("payment error");
+      reject(err);
     }
   });
 };
@@ -220,4 +321,7 @@ module.exports = {
   changePasswordService: changePasswordService,
   refreshTokenService: refreshTokenService,
   getAccountInfo: getAccountInfo,
+  getVia: getVia,
+  getAllGroupVia: getAllGroupVia,
+  payMent: payMent,
 };

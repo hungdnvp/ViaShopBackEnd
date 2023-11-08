@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
   GroupVia.init(
     {
       groupViaName: { type: DataTypes.STRING, unique: true },
+      image: DataTypes.STRING,
     },
     {
       sequelize,

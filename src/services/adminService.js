@@ -34,11 +34,12 @@ let getAllUserService = () => {
     }
   });
 };
-let addGroupVia = (groupViaName) => {
+let addGroupVia = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
       await db.GroupVia.create({
-        groupViaName: groupViaName,
+        groupViaName: data.groupViaName,
+        image: data.image,
       });
       resolve({
         errCode: 0,
@@ -77,7 +78,6 @@ let getAllGroupVia = () => {
 };
 let addVia = (data) => {
   return new Promise(async (resolve, reject) => {
-    console.log("data add via:", data);
     try {
       await db.Via.create({
         nameVia: data.nameVia,
@@ -129,10 +129,94 @@ let getAllVia = () => {
     }
   });
 };
+let editVia = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await db.Via.update(
+        {
+          nameVia: data.nameVia,
+          price: data.price,
+          discountPrice: data.discountPrice || null,
+          discountCondition: data.discountCondition || null,
+          descriptions: data.descriptions,
+        },
+        {
+          where: { id: data.id },
+        }
+      );
+
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
+    } catch (err) {
+      console.log("edit via error");
+      console.log(err);
+      reject(err);
+    }
+  });
+};
+let editGroupVia = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!data.image) {
+        await db.GroupVia.update(
+          {
+            groupViaName: data.groupViaName,
+          },
+          {
+            where: { id: data.id },
+          }
+        );
+      } else {
+        await db.GroupVia.update(
+          {
+            groupViaName: data.groupViaName,
+            image: data.image,
+          },
+          {
+            where: { id: data.id },
+          }
+        );
+      }
+
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
+    } catch (err) {
+      console.log("edit group VIa error");
+      reject(err);
+    }
+  });
+};
+const bulkCreateProducts = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!data || data.length < 1) {
+        resolve({
+          errCode: 1,
+          errMessage: "Missing require parameter",
+        });
+      } else {
+        await db.Product.bulkCreate(data);
+        resolve({
+          errCode: 0,
+          errMessage: "OK",
+        });
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
 module.exports = {
   getAllUserService: getAllUserService,
   getAllGroupVia: getAllGroupVia,
   addGroupVia: addGroupVia,
   addVia: addVia,
   getAllVia: getAllVia,
+  editVia: editVia,
+  editGroupVia: editGroupVia,
+  bulkCreateProducts: bulkCreateProducts,
 };

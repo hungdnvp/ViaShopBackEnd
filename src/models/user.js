@@ -11,7 +11,11 @@ module.exports = (sequelize, DataTypes) => {
       User.hasOne(models.RefreshToken, {
         foreignKey: "userId",
       });
+      User.hasMany(models.Transaction, {
+        foreignKey: "userId",
+      });
     }
+
     // User.belongsTo(models.Allcode, {foreignKey: 'gender', targetKey:'keyMap', as: 'genderData'})
     // User.hasOne(models.Markdown, {foreignKey: 'doctorId'})
   }

@@ -5,6 +5,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 export const autoAuthMiddleware = (req, res, next) => {
+  // autoLogin
   const cookies = req.cookies;
   if (!cookies || !cookies?.refreshToken) {
     res.status(401).json({ errCode: -1 });
@@ -25,6 +26,20 @@ export const loginAuthLimitMiddleware = rateLimit({
   legacyHeaders: false,
 });
 
+export const adminMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ errCode: -1 });
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ errCode: -1 }); //invalid token
+    // req.user = decoded.username;
+    if (decoded.email === process.env.EMAIL_ADMIN) next();
+    else {
+      return res.status(403).json({ errCode: -1 });
+    }
+  });
+};
+
 const authMiddleware = (req, res, next) => {
   const nonCheckPath = [
     "/api/login",
@@ -33,7 +48,8 @@ const authMiddleware = (req, res, next) => {
     "/refresh",
     "/api/logout",
   ];
-  if (nonCheckPath.includes(req.path)) return next();
+  if (nonCheckPath.includes(req.path) || req.path.includes("adminApi"))
+    return next();
   else {
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ errCode: -1 });
@@ -41,12 +57,7 @@ const authMiddleware = (req, res, next) => {
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) return res.status(403).json({ errCode: -1 }); //invalid token
       // req.user = decoded.username;
-      if (req.path.includes("adminApi")) {
-        if (decoded.email === "hjghlklj@gmail.com") next();
-        else {
-          return res.status(403).json({ errCode: -1 });
-        }
-      } else next();
+      next();
     });
   }
 };

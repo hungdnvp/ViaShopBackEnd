@@ -8,12 +8,10 @@ let handleRegister = async (req, res) => {
     let message = await userService.registerService(req.body);
     return res.status(200).json(message);
   } catch (e) {
-    return res
-      .status(500)
-      .json({
-        errCode: -1,
-        errMessage: "lỗi đăng kí, tài khoản hoặc email đã tồn tại!",
-      });
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "lỗi đăng kí, tài khoản hoặc email đã tồn tại!",
+    });
   }
 };
 
@@ -30,6 +28,7 @@ let handleLogin = async (req, res) => {
   try {
     let Data = await userService.loginService(username, password);
     if (Data && Data.errCode === 0) {
+      let authAdmin = Data.email === process.env.EMAIL_ADMIN ? true : false;
       return res
         .cookie("refreshToken", Data.refreshToken, {
           path: "/",
@@ -40,10 +39,7 @@ let handleLogin = async (req, res) => {
           maxAge: 30 * 24 * 60 * 60 * 1000,
         })
         .status(200)
-        .json({
-          accessToken: Data.accessToken,
-          email: Data.email,
-        });
+        .json(Data);
     } else {
       return res.status(401).json(Data);
     }
@@ -60,7 +56,13 @@ let handleLogOut = async (req, res) => {
 };
 let handleAutoLogin = (req, res) => {
   const accessToken = createToken({ email: req.email });
-  return res.status(200).json({ accessToken: accessToken, email: req.email });
+  if (req.email === process.env.EMAIL_ADMIN) {
+    return res
+      .status(200)
+      .json({ accessToken: accessToken, email: req.email, authAdmin: true });
+  } else {
+    return res.status(200).json({ accessToken: accessToken, email: req.email });
+  }
 };
 let handleRefreshToken = async (req, res) => {
   console.log("get /refresh token");
@@ -117,12 +119,39 @@ let getAccountInfo = async (req, res) => {
     }
   }
 };
+let getVia = async (req, res) => {
+  let groupId = req.query.groupViaId;
+
+  try {
+    let data = await userService.getVia(groupId);
+    return res.status(200).json(data);
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ errCode: -1, errMessage: "Error from server" });
+  }
+};
+let getAllGroupVia = async (req, res) => {
+  try {
+    let response = await userService.getAllGroupVia();
+    if (response?.errCode === 0) {
+      return res.status(200).json(response.data);
+    }
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   handleLogin: handleLogin,
   handleRegister: handleRegister,
-  handleLogOut,
+  handleLogOut: handleLogOut,
   handleChangePassword: handleChangePassword,
   handleAutoLogin: handleAutoLogin,
   getAccountInfo: getAccountInfo,
   handleRefreshToken: handleRefreshToken,
+  getVia: getVia,
+  getAllGroupVia: getAllGroupVia,
 };
