@@ -25,11 +25,13 @@ let initWebRoutes = (app) => {
     userController.handleAutoLogin
   );
   router.get("/refresh", userController.handleRefreshToken);
-  router.get("/api/getVia", userController.getVia);
+  router.get("/api/getVia", userController.getAllViaOfGroup);
+  router.get("/api/getViaInfor", userController.getViaInfor);
   router.get("/api/getAllGroupVia", userController.getAllGroupVia);
   // *******       API ********* CLIENT PRIVATE **************//
   router.post("/api/changePassword", userController.handleChangePassword);
   router.get("/api/getAccountInfo", userController.getAccountInfo);
+  router.post("/api/payMent", userController.payMent);
 
   // *********API********************// ADMIN????????????
 

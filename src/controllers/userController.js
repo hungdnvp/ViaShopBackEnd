@@ -79,8 +79,9 @@ let handleRefreshToken = async (req, res) => {
   }
 };
 let handleChangePassword = async (req, res) => {
-  // console.log(req.headers.cookie);
-  let email = req.body.email;
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+  let email = verifyToken(token)?.data.email || null;
   let currentPass = req.body.currentPass;
   let newPass = req.body.newPass;
   if (!currentPass || !newPass || !email) {
@@ -103,7 +104,9 @@ let handleChangePassword = async (req, res) => {
   }
 };
 let getAccountInfo = async (req, res) => {
-  let email = req.query.email;
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+  let email = verifyToken(token)?.data.email || null;
   if (!email) {
     return res
       .status(200)
@@ -119,11 +122,27 @@ let getAccountInfo = async (req, res) => {
     }
   }
 };
-let getVia = async (req, res) => {
+let getAllViaOfGroup = async (req, res) => {
   let groupId = req.query.groupViaId;
 
   try {
-    let data = await userService.getVia(groupId);
+    let data = await userService.getAllViaOfGroup(groupId);
+    return res.status(200).json(data);
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ errCode: -1, errMessage: "Error from server" });
+  }
+};
+let getViaInfor = async (req, res) => {
+  let idVia = req.query.idVia;
+  if (!idVia) {
+    return res
+      .status(500)
+      .json({ errCode: -1, errMessage: "Missing require parameter" });
+  }
+  try {
+    let data = await userService.getViaInfor(idVia);
     return res.status(200).json(data);
   } catch (e) {
     return res
@@ -136,12 +155,50 @@ let getAllGroupVia = async (req, res) => {
     let response = await userService.getAllGroupVia();
     if (response?.errCode === 0) {
       return res.status(200).json(response.data);
+    } else {
+      return res
+        .status(500)
+        .json({ errCode: -1, errMessage: "Error from server" });
     }
   } catch (e) {
     return res.status(500).json({
       errCode: -1,
       errMessage: "Error from server",
     });
+  }
+};
+let payMent = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+  let email = verifyToken(token)?.data.email || null;
+  let viaId = req.body.viaId;
+  let quantity = parseInt(req.body.quantity);
+  if (!email || !viaId || !quantity || quantity < 1) {
+    return res
+      .status(200)
+      .json({ errCode: 1, errMessage: "Missing require parameter" });
+  } else {
+    try {
+      let response = await userService.payMent({
+        email: email,
+        viaId: viaId,
+        quantity: quantity,
+      });
+      if (response?.errCode === 0) {
+        return res.status(200).json(response);
+      } else {
+        return res.status(500).json({
+          errCode: response?.errCode || -1,
+          errMessage: response?.errMessage || "Error from server",
+        });
+      }
+    } catch (e) {
+      console.log("error controler payment");
+      return res.status(500).json({
+        errCode: -1,
+        errMessage: "Error from server",
+      });
+    }
   }
 };
 module.exports = {
@@ -152,6 +209,8 @@ module.exports = {
   handleAutoLogin: handleAutoLogin,
   getAccountInfo: getAccountInfo,
   handleRefreshToken: handleRefreshToken,
-  getVia: getVia,
+  getAllViaOfGroup: getAllViaOfGroup,
+  getViaInfor: getViaInfor,
   getAllGroupVia: getAllGroupVia,
+  payMent: payMent,
 };

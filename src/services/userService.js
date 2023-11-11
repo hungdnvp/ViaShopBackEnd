@@ -1,13 +1,24 @@
 import db from "../models/index";
 import bcrypt from "bcryptjs";
 import { createToken } from "../middleware/JWTAction";
+import sendEmail from "./emailService";
 import moment from "moment";
+import axios from "axios";
 require("dotenv").config();
 
+const mustache = require("mustache");
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const jwt = require("jsonwebtoken");
 const salt = bcrypt.genSaltSync(10);
+const fs = require("fs");
+const path = require("path");
 
+const subjectMailRegister = "Chào mừng bạn đến với [TK10000đ]";
+const templateMailRegisterPath = path.join(
+  __dirname,
+  "templateMailRegister.html"
+);
+const templateMailRegister = fs.readFileSync(templateMailRegisterPath, "utf-8");
 let hashPassword = (password) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -22,19 +33,51 @@ let hashPassword = (password) => {
 let registerService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let hashPass = await hashPassword(data.password);
-      await db.User.create({
-        email: data.email,
-        password: hashPass,
-        username: data.username,
-        phonenumber: data.phonenumber,
-        balance: 0,
-        role: "user",
-      });
-      resolve({
-        errCode: 0,
-        errMessage: "OK",
-      });
+      axios
+        .get(
+          `https://emailvalidation.abstractapi.com/v1/?api_key=395e56f28925475294ae17a7da7ce615&email=${data.email}`
+        )
+        .then(async (response) => {
+          let check = response.data.is_smtp_valid.value;
+          if (check) {
+            const replaceMail = {
+              username: data.username,
+              email: data.email,
+              phonenumber: data.phonenumber,
+            };
+            const mailContent = mustache.render(
+              templateMailRegister,
+              replaceMail
+            );
+
+            let hashPass = await hashPassword(data.password);
+            await db.User.create({
+              email: data.email,
+              password: hashPass,
+              username: data.username,
+              phonenumber: data.phonenumber,
+              balance: 0,
+              role: "user",
+            });
+            await sendEmail(data.email, subjectMailRegister, mailContent);
+            resolve({
+              errCode: 0,
+              errMessage: "OK",
+            });
+          } else {
+            resolve({
+              errCode: -1,
+              errMessage: "Email không hợp lệ",
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+          resolve({
+            errCode: -1,
+            errMessage: "Lỗi đăng kí",
+          });
+        });
     } catch (e) {
       console.log("create user error");
       reject(e);
@@ -121,7 +164,7 @@ let loginService = (username, password) => {
       } else {
         resolve({
           errCode: 1,
-          errMessage: `Tên tài khoản không tồn tại trong hệ thống`,
+          errMessage: "Tên tài khoản không tồn tại trong hệ thống",
         });
       }
     } catch (e) {
@@ -234,7 +277,7 @@ let getAccountInfo = (email) => {
     }
   });
 };
-let getVia = (idGroup) => {
+let getAllViaOfGroup = (idGroup) => {
   return new Promise(async (resolve, reject) => {
     if (idGroup) {
       try {
@@ -270,6 +313,25 @@ let getVia = (idGroup) => {
     }
   });
 };
+let getViaInfor = (idVia) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let response = await db.Via.findOne({
+        where: { id: idVia },
+        attributes: {
+          exclude: "updatedAt",
+        },
+      });
+      resolve({
+        errCode: 0,
+        data: response,
+      });
+    } catch (e) {
+      console.log("user get via by group id err");
+      reject(e);
+    }
+  });
+};
 let getAllGroupVia = () => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -302,13 +364,95 @@ let getAllGroupVia = () => {
     }
   });
 };
-let payMent = () => {
+let payMent = (data) => {
+  /*
+    // data = {email, viaId, quantity, }
+  */
   return new Promise(async (resolve, reject) => {
     try {
-      resolve({
-        errCode: 0,
-        errMessage: "success",
+      let user = await db.User.findOne({
+        where: { email: data.email },
+        attributes: ["id", "balance"],
       });
+      let via = await db.Via.findOne({
+        where: { id: data.viaId },
+      });
+      let totalPayMent = via.price * data.quantity;
+      let products = [];
+      let listIdProduct = [];
+      await db.Product.findAll({
+        where: { viaId: data.viaId, status: "unsold" },
+        attributes: ["id", "information"],
+        order: [["id", "ASC"]],
+        limit: data.quantity,
+      })
+        .then((data) => {
+          console.log(data);
+          data.forEach((item) => {
+            products.push(item);
+            listIdProduct.push(item.id);
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+          resolve({
+            errCode: 1,
+            errMessage: "không thể tạo giao dịch",
+          });
+        });
+      if (
+        !user ||
+        !via ||
+        !products ||
+        products.length !== data.quantity ||
+        user?.balance < totalPayMent
+      ) {
+        resolve({
+          errCode: 1,
+          errMessage: "không thể tạo giao dịch",
+        });
+      } else {
+        // ----------- TRU TIEN ------
+        let isPay = await db.User.update(
+          { balance: user.balance - totalPayMent },
+          { where: { id: user.id } }
+        );
+        if (isPay.length > 0) {
+          console.log("number of products:", isPay.length);
+          ////               CREATE TRANSACTION
+          const currentTimestamp = new Date().getTime();
+          let timeReverse = currentTimestamp
+            .toString()
+            .split("")
+            .reverse()
+            .join("");
+          const code = (data.viaId + timeReverse).slice(0, 9);
+          const detail = JSON.stringify(products);
+
+          await db.Transaction.create({
+            code: code,
+            userId: user.id,
+            viaId: via.id,
+            viaName: via.nameVia,
+            quantity: data.quantity,
+            totalPayment: totalPayMent,
+            detail: detail,
+          });
+          //    UPDATE STATUS SOLD PRODUCT
+          await db.Product.update(
+            { status: "sold" },
+            {
+              where: {
+                id: listIdProduct, // Same as using `id: { [Op.in]: [1,2,3] }`
+              },
+            }
+          );
+          resolve({
+            errCode: 0,
+            errMessage: `Bạn đã thanh toán ${totalPayMent} đ. Vui lòng truy cập lịch sử mua hàng để xem đơn hàng !!`,
+          });
+        }
+      }
     } catch (err) {
       console.log("payment error");
       reject(err);
@@ -321,7 +465,8 @@ module.exports = {
   changePasswordService: changePasswordService,
   refreshTokenService: refreshTokenService,
   getAccountInfo: getAccountInfo,
-  getVia: getVia,
+  getAllViaOfGroup: getAllViaOfGroup,
+  getViaInfor: getViaInfor,
   getAllGroupVia: getAllGroupVia,
   payMent: payMent,
 };

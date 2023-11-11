@@ -27,7 +27,7 @@ export const loginAuthLimitMiddleware = rateLimit({
 });
 
 export const adminMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers?.authorization;
   if (!authHeader) return res.status(401).json({ errCode: -1 });
   const token = authHeader.split(" ")[1];
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
@@ -51,7 +51,7 @@ const authMiddleware = (req, res, next) => {
   if (nonCheckPath.includes(req.path) || req.path.includes("adminApi"))
     return next();
   else {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers?.authorization;
     if (!authHeader) return res.status(401).json({ errCode: -1 });
     const token = authHeader.split(" ")[1];
     jwt.verify(token, JWT_SECRET, (err, decoded) => {

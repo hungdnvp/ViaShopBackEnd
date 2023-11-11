@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       viaName: DataTypes.STRING,
       quantity: DataTypes.INTEGER,
       totalPayment: DataTypes.INTEGER,
+      detail: DataTypes.STRING(3000),
     },
     {
       sequelize,
