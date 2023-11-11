@@ -13,6 +13,7 @@ const port = process.env.PORT || 9090;
 
 let app = express();
 //config app
+app.set('trust proxy', true);
 app.use(
   cors({
     origin: process.env.URL_FONT_END,

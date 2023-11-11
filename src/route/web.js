@@ -14,7 +14,6 @@ let initWebRoutes = (app) => {
   router.use(authMiddleware);
   router.post(
     "/api/login",
-    loginAuthLimitMiddleware,
     userController.handleLogin
   );
   router.post("/api/register", userController.handleRegister);
