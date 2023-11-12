@@ -12,10 +12,7 @@ let router = express.Router();
 let initWebRoutes = (app) => {
   // *********API*****                  CLIENT COMMON                  ????????????
   router.use(authMiddleware);
-  router.post(
-    "/api/login",
-    userController.handleLogin
-  );
+  router.post("/api/login", userController.handleLogin);
   router.post("/api/register", userController.handleRegister);
   router.get("/api/logout", userController.handleLogOut);
   router.get(
@@ -29,6 +26,8 @@ let initWebRoutes = (app) => {
   router.get("/api/getAllGroupVia", userController.getAllGroupVia);
   // *******       API ********* CLIENT PRIVATE **************//
   router.post("/api/changePassword", userController.handleChangePassword);
+  router.get("/api/forGotPass", userController.handleforGotPass);
+
   router.get("/api/getAccountInfo", userController.getAccountInfo);
   router.post("/api/payMent", userController.payMent);
 

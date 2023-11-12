@@ -86,7 +86,7 @@ let handleChangePassword = async (req, res) => {
   let newPass = req.body.newPass;
   if (!currentPass || !newPass || !email) {
     return res
-      .status(200)
+      .status(500)
       .json({ errCode: 1, errMessage: "Missing require parameter" });
   } else {
     try {
@@ -96,6 +96,24 @@ let handleChangePassword = async (req, res) => {
         newPass
       );
       return res.status(200).json(data);
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ errCode: -1, errMessage: "Error from server" });
+    }
+  }
+};
+let handleforGotPass = async (req, res) => {
+  let email = req.query.email;
+  if (!email) {
+    return res
+      .status(500)
+      .json({ errCode: 1, errMessage: "Missing require parameter" });
+  } else {
+    try {
+      let data = await userService.forGotPass(email);
+      const status = data.errCode === 0 ? 200 : 500;
+      return res.status(status).json(data);
     } catch (e) {
       return res
         .status(500)
@@ -206,6 +224,7 @@ module.exports = {
   handleRegister: handleRegister,
   handleLogOut: handleLogOut,
   handleChangePassword: handleChangePassword,
+  handleforGotPass: handleforGotPass,
   handleAutoLogin: handleAutoLogin,
   getAccountInfo: getAccountInfo,
   handleRefreshToken: handleRefreshToken,

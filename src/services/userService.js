@@ -14,11 +14,18 @@ const fs = require("fs");
 const path = require("path");
 
 const subjectMailRegister = "Chào mừng bạn đến với [TK10000đ]";
+const subjectMailConfirm = "Đặt Lại Mật Khẩu - [TK10000đ]";
 const templateMailRegisterPath = path.join(
   __dirname,
   "templateMailRegister.html"
 );
+const templateMailConfirmPath = path.join(
+  __dirname,
+  "templateMailConfirm.html"
+);
 const templateMailRegister = fs.readFileSync(templateMailRegisterPath, "utf-8");
+const templateMailConfirm = fs.readFileSync(templateMailConfirmPath, "utf-8");
+
 let hashPassword = (password) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -33,41 +40,47 @@ let hashPassword = (password) => {
 let registerService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
-      axios
+      axios // =>>>>>>>>>> valid email api checker
         .get(
           `https://emailvalidation.abstractapi.com/v1/?api_key=395e56f28925475294ae17a7da7ce615&email=${data.email}`
         )
         .then(async (response) => {
-          let check = response.data.is_smtp_valid.value;
-          if (check) {
-            const replaceMail = {
-              username: data.username,
-              email: data.email,
-              phonenumber: data.phonenumber,
-            };
-            const mailContent = mustache.render(
-              templateMailRegister,
-              replaceMail
-            );
-
-            let hashPass = await hashPassword(data.password);
-            await db.User.create({
-              email: data.email,
-              password: hashPass,
-              username: data.username,
-              phonenumber: data.phonenumber,
-              balance: 0,
-              role: "user",
-            });
-            await sendEmail(data.email, subjectMailRegister, mailContent);
-            resolve({
-              errCode: 0,
-              errMessage: "OK",
-            });
+          if (response.status === 200) {
+            let check = response.data.is_smtp_valid.value;
+            if (check) {
+              let hashPass = await hashPassword(data.password);
+              await db.User.create({
+                email: data.email,
+                password: hashPass,
+                username: data.username,
+                phonenumber: data.phonenumber,
+                balance: 0,
+                role: "user",
+              });
+              const replaceMail = {
+                username: data.username,
+                email: data.email,
+                phonenumber: data.phonenumber,
+              };
+              const mailContent = mustache.render(
+                templateMailRegister,
+                replaceMail
+              );
+              await sendEmail(data.email, subjectMailRegister, mailContent);
+              resolve({
+                errCode: 0,
+                errMessage: "OK",
+              });
+            } else {
+              resolve({
+                errCode: -1,
+                errMessage: "Email không hợp lệ",
+              });
+            }
           } else {
             resolve({
               errCode: -1,
-              errMessage: "Email không hợp lệ",
+              errMessage: "Lỗi xử lí, vui lòng thử lại !!!",
             });
           }
         })
@@ -244,6 +257,53 @@ let changePasswordService = (email, currentPass, newPass) => {
         });
       }
     } catch (e) {
+      reject(e);
+    }
+  });
+};
+const generateRandomCode = () => {
+  const min = 100000; // Giá trị nhỏ nhất (6 chữ số)
+  const max = 999999; // Giá trị lớn nhất (6 chữ số)
+
+  const randomCode = Math.floor(Math.random() * (max - min + 1)) + min;
+  return randomCode;
+};
+
+let forGotPass = (email) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // find email
+      let user = await db.User.findOne({
+        where: { email: email },
+      });
+      if (user) {
+        const code = generateRandomCode();
+        const replaceMail = {
+          username: user.username,
+          code: code,
+        };
+        const mailContent = mustache.render(templateMailConfirm, replaceMail);
+        await sendEmail(email, subjectMailConfirm, mailContent);
+
+        const expiresAt = new Date(); // Lấy thời điểm hiện tại
+        expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+        await db.ConfirmCode.create({
+          email: email,
+          code: code,
+          expiresAt: expiresAt,
+        });
+        resolve({
+          errCode: 0,
+          errMessage: "Vui lòng kiểm tra hộp thư Email để nhận mã xác nhận!",
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "Email không tồn tại trong hệ thống",
+        });
+      }
+    } catch (e) {
+      console.log("error forgot password");
       reject(e);
     }
   });
@@ -463,6 +523,7 @@ module.exports = {
   registerService: registerService,
   loginService: loginService,
   changePasswordService: changePasswordService,
+  forGotPass: forGotPass,
   refreshTokenService: refreshTokenService,
   getAccountInfo: getAccountInfo,
   getAllViaOfGroup: getAllViaOfGroup,
