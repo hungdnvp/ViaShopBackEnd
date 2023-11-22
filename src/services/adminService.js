@@ -8,7 +8,7 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const jwt = require("jsonwebtoken");
 const salt = bcrypt.genSaltSync(10);
 
-let getAllUserService = () => {
+let getAllUserService = (page, limit) => {
   return new Promise(async (resolve, reject) => {
     try {
       let users = await db.User.findAll({
@@ -16,12 +16,18 @@ let getAllUserService = () => {
         attributes: {
           exclude: ["password", "updatedAt", "role"],
         },
+        offset: (page - 1) * limit,
+        limit: limit,
+      });
+      const totalCount = await db.User.count({
+        where: { role: "user" },
       });
       if (users) {
         resolve({
           errCode: 0,
           errMessage: "success",
           data: users,
+          total: totalCount,
         });
       } else {
         resolve({
@@ -98,37 +104,7 @@ let addVia = (data) => {
     }
   });
 };
-let getAllVia = () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const data = await db.Via.findAll({
-        attributes: {
-          exclude: ["updatedAt"],
-        },
-        include: {
-          model: db.GroupVia,
-          attributes: ["groupViaName"],
-        },
-        raw: true,
-        nest: true,
-      });
-      if (data) {
-        resolve({
-          errCode: 0,
-          data: data,
-        });
-      } else {
-        resolve({
-          errCode: 1,
-          errMessage: "Via not found or empty",
-        });
-      }
-    } catch (err) {
-      console.log("get all via error");
-      reject(err);
-    }
-  });
-};
+
 let editVia = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -206,6 +182,61 @@ const bulkCreateProducts = (data) => {
         });
       }
     } catch (e) {
+      console.log("user get all via err");
+
+      reject(e);
+    }
+  });
+};
+const viewProduct = (viaId, pagination) => {
+  return new Promise(async (resolve, reject) => {
+    const page = pagination.current || 1;
+    const limit = pagination.pageSize || 10;
+    try {
+      let data = await db.Product.findAll({
+        where: { viaId: viaId },
+        attributes: {
+          exclude: "updatedAt",
+        },
+        offset: (page - 1) * limit,
+        limit: limit,
+      });
+      if (data && data.length > 0) {
+        data.map((item, index) => {
+          let formatDate = moment(data.createdAt).format("YYYY-MM-DD");
+          item.createdAt = formatDate;
+        });
+      }
+      const totalCount = await db.Product.count({
+        where: { viaId: viaId },
+      });
+      // console.log(data);
+      resolve({
+        errCode: 0,
+        data: data,
+        total: totalCount,
+      });
+    } catch (e) {
+      console.log("view Product error");
+      reject(e);
+    }
+  });
+};
+const publicMoney = (idUser, money, type) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await db.Deposit.create({
+        userId: idUser,
+        money: money,
+        typePublish: type,
+      });
+      // await db.User.increment({ balance: money }, { where: { id: idUser } });
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
+    } catch (e) {
+      console.log("public Money err");
       reject(e);
     }
   });
@@ -215,8 +246,9 @@ module.exports = {
   getAllGroupVia: getAllGroupVia,
   addGroupVia: addGroupVia,
   addVia: addVia,
-  getAllVia: getAllVia,
   editVia: editVia,
   editGroupVia: editGroupVia,
   bulkCreateProducts: bulkCreateProducts,
+  viewProduct: viewProduct,
+  publicMoney: publicMoney,
 };

@@ -48,6 +48,7 @@ const authMiddleware = (req, res, next) => {
     "/refresh",
     "/api/logout",
     "/api/forGotPass",
+    "/api/confirmForGotPass",
   ];
   if (nonCheckPath.includes(req.path) || req.path.includes("adminApi"))
     return next();

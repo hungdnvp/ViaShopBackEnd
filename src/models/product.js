@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       information: DataTypes.STRING,
       viaId: DataTypes.INTEGER,
       status: DataTypes.STRING,
+      owner: DataTypes.STRING,
     },
     {
       sequelize,

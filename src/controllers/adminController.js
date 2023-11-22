@@ -1,13 +1,25 @@
 import adminService from "../services/adminService";
+import userService from "../services/userService";
 import { verifyToken, createToken } from "../middleware/JWTAction";
 
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
 let getAllUser = async (req, res) => {
+  let page = req.query.page || 1;
+  let limit = req.query.limit || 10;
+
+  if (!page || !limit) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
   try {
-    let response = await adminService.getAllUserService();
+    page = parseInt(page);
+    limit = parseInt(limit);
+    let response = await adminService.getAllUserService(page, limit);
     if (response) {
-      return res.status(200).json(response.data);
+      return res.status(200).json(response);
     }
   } catch (err) {
     return res.status(500).json({
@@ -59,11 +71,12 @@ let addVia = async (req, res) => {
   }
 };
 let getAllVia = async (req, res) => {
+  let pagination = req.body.pagination;
   try {
-    let response = await adminService.getAllVia();
+    let response = await userService.getAllViaOfGroup(null, pagination);
     return res.status(200).json(response);
   } catch (e) {
-    console.log("error edit via controler");
+    console.log("error get all via admin controler");
     return res.status(500).json({
       errCode: -1,
       errMessage: "Error from server",
@@ -120,6 +133,47 @@ let bulkCreateProducts = async (req, res) => {
     });
   }
 };
+let viewProduct = async (req, res) => {
+  let viaId = req.body.viaId;
+  let pagination = req.body.pagination;
+  if (!viaId || !pagination) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+  try {
+    let response = await adminService.viewProduct(viaId, pagination);
+    return res.status(200).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
+let publicMoney = async (req, res) => {
+  let userId = req.query.userId;
+  let money = req.query.money;
+  let typePublish = req.query.type || "admin";
+  if (!userId || !money) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+  try {
+    money = parseInt(money);
+    let response = await adminService.publicMoney(userId, money, typePublish);
+    return res.status(200).json(response);
+  } catch (e) {
+    console.log("error public Money controler");
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   getAllUser: getAllUser,
   addGroupVia: addGroupVia,
@@ -129,4 +183,6 @@ module.exports = {
   editVia: editVia,
   editGroupVia: editGroupVia,
   bulkCreateProducts: bulkCreateProducts,
+  viewProduct: viewProduct,
+  publicMoney: publicMoney,
 };

@@ -108,12 +108,37 @@ let handleforGotPass = async (req, res) => {
   if (!email) {
     return res
       .status(500)
-      .json({ errCode: 1, errMessage: "Missing require parameter" });
+      .json({ errCode: 1, errMessage: "Vui lòng cung cấp email hợp lệ" });
   } else {
     try {
       let data = await userService.forGotPass(email);
       const status = data.errCode === 0 ? 200 : 500;
       return res.status(status).json(data);
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ errCode: -1, errMessage: "lỗi xử lí, Emai không hợp lệ" });
+    }
+  }
+};
+let confirmForGotPass = async (req, res) => {
+  let email = req.body.email;
+  let newPass = req.body.newPass;
+  let code = req.body.code;
+  let currentPass = null;
+  if (!code || !newPass || !email) {
+    return res
+      .status(500)
+      .json({ errCode: 1, errMessage: "Missing require parameter" });
+  } else {
+    try {
+      let data = await userService.changePasswordService(
+        email,
+        currentPass,
+        newPass,
+        code
+      );
+      return res.status(200).json(data);
     } catch (e) {
       return res
         .status(500)
@@ -141,10 +166,10 @@ let getAccountInfo = async (req, res) => {
   }
 };
 let getAllViaOfGroup = async (req, res) => {
-  let groupId = req.query.groupViaId;
-
+  let groupId = req.body.groupId || null;
+  let pagination = req.body.pagination;
   try {
-    let data = await userService.getAllViaOfGroup(groupId);
+    let data = await userService.getAllViaOfGroup(groupId, pagination);
     return res.status(200).json(data);
   } catch (e) {
     return res
@@ -219,12 +244,76 @@ let payMent = async (req, res) => {
     }
   }
 };
+let viewTransaction = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+  let email = verifyToken(token)?.data.email || null;
+  let current = req.query.current;
+  let pageSize = req.query.pageSize;
+
+  if (!pageSize || !current || !email) {
+    return res
+      .status(500)
+      .json({ errCode: -1, errMessage: "Error from server" });
+  }
+  try {
+    current = parseInt(current);
+    pageSize = parseInt(pageSize);
+
+    let response = await userService.viewTransaction(email, current, pageSize);
+    if (response.errCode === 0) {
+      return res.status(200).json(response);
+    } else
+      return res.status(500).json({
+        errCode: -1,
+        errMessage: "Error from server",
+      });
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
+
+let viewDeposit = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+  let email = verifyToken(token)?.data.email || null;
+  let current = req.query.current;
+  let pageSize = req.query.pageSize;
+
+  if (!pageSize || !current || !email) {
+    return res
+      .status(500)
+      .json({ errCode: -1, errMessage: "Error from server" });
+  }
+  try {
+    current = parseInt(current);
+    pageSize = parseInt(pageSize);
+
+    let response = await userService.viewDeposit(email, current, pageSize);
+    if (response.errCode === 0) {
+      return res.status(200).json(response);
+    } else
+      return res.status(500).json({
+        errCode: -1,
+        errMessage: "Error from server",
+      });
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   handleLogin: handleLogin,
   handleRegister: handleRegister,
   handleLogOut: handleLogOut,
   handleChangePassword: handleChangePassword,
   handleforGotPass: handleforGotPass,
+  confirmForGotPass: confirmForGotPass,
   handleAutoLogin: handleAutoLogin,
   getAccountInfo: getAccountInfo,
   handleRefreshToken: handleRefreshToken,
@@ -232,4 +321,6 @@ module.exports = {
   getViaInfor: getViaInfor,
   getAllGroupVia: getAllGroupVia,
   payMent: payMent,
+  viewTransaction: viewTransaction,
+  viewDeposit: viewDeposit,
 };

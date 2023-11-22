@@ -222,7 +222,7 @@ let refreshTokenService = (token) => {
   });
 };
 
-let changePasswordService = (email, currentPass, newPass) => {
+let changePasswordService = (email, currentPass, newPass, code = null) => {
   return new Promise(async (resolve, reject) => {
     try {
       // check email
@@ -230,12 +230,31 @@ let changePasswordService = (email, currentPass, newPass) => {
         where: { email: email },
       });
       if (user) {
-        let check = await bcrypt.compareSync(currentPass, user.password); // check pass
-        if (check) {
-          let hasNewPass = await hashPassword(newPass);
+        let changePass = false;
+        let errMess =
+          "mã xác nhận không hợp lệ hoặc đã hết hạn, vui lòng kiểm tra lại";
+        if (code) {
+          let checkCode = await db.ConfirmCode.findOne({
+            where: {
+              email: email,
+              code: code,
+              expiresAt: {
+                [db.Sequelize.Op.gte]: new Date(), // Kiểm tra xem expiresAt có lớn hơn hoặc bằng thời điểm hiện tại hay không
+              },
+            },
+          });
+          if (checkCode) {
+            changePass = true;
+          }
+        } else {
+          changePass = await bcrypt.compareSync(currentPass, user.password); // check pass
+          errMess = "Mật khẩu hiện tại không chính xác, vui lòng kiểm tra lại";
+        }
+        if (changePass) {
+          let hashNewPass = await hashPassword(newPass);
           await db.User.update(
             {
-              password: hasNewPass,
+              password: hashNewPass,
             },
             { where: { email: email } }
           );
@@ -247,16 +266,17 @@ let changePasswordService = (email, currentPass, newPass) => {
         } else {
           resolve({
             errCode: 1,
-            errMessage: "Mật khẩu hiện tại không chính xác",
+            errMessage: errMess,
           });
         }
       } else {
         resolve({
           errCode: 1,
-          errMessage: "Error from server",
+          errMessage: "Email không tồn tại trong hệ thống",
         });
       }
     } catch (e) {
+      console.log("changePass error");
       reject(e);
     }
   });
@@ -282,16 +302,30 @@ let forGotPass = (email) => {
           username: user.username,
           code: code,
         };
-        const mailContent = mustache.render(templateMailConfirm, replaceMail);
-        await sendEmail(email, subjectMailConfirm, mailContent);
-
         const expiresAt = new Date(); // Lấy thời điểm hiện tại
         expiresAt.setMinutes(expiresAt.getMinutes() + 10);
-        await db.ConfirmCode.create({
-          email: email,
-          code: code,
-          expiresAt: expiresAt,
+        let checkConfirm = await db.ConfirmCode.findOrCreate({
+          where: { email: email },
+          defaults: {
+            email: email,
+            code: code,
+            expiresAt: expiresAt,
+          },
         });
+        if (!checkConfirm[1]) {
+          // neu da ton tai confirm cua tai khoan nay -> update code, expiresAt
+          await db.ConfirmCode.update(
+            {
+              code: code,
+              expiresAt: expiresAt,
+            },
+            {
+              where: { email: email },
+            }
+          );
+        }
+        const mailContent = mustache.render(templateMailConfirm, replaceMail);
+        await sendEmail(email, subjectMailConfirm, mailContent);
         resolve({
           errCode: 0,
           errMessage: "Vui lòng kiểm tra hộp thư Email để nhận mã xác nhận!",
@@ -314,7 +348,7 @@ let getAccountInfo = (email) => {
       let userInfo = await db.User.findOne({
         where: { email: email },
         attributes: {
-          exclude: ["password", "updatedAt"],
+          exclude: ["password", "updatedAt", "role"],
         },
       });
       if (userInfo) {
@@ -323,7 +357,7 @@ let getAccountInfo = (email) => {
         resolve({
           errCode: 0,
           errMessage: "success",
-          data: userInfo,
+          user: userInfo,
         });
       } else {
         resolve({
@@ -337,7 +371,7 @@ let getAccountInfo = (email) => {
     }
   });
 };
-let getAllViaOfGroup = (idGroup) => {
+let getAllViaOfGroup = (idGroup, pagination) => {
   return new Promise(async (resolve, reject) => {
     if (idGroup) {
       try {
@@ -356,15 +390,28 @@ let getAllViaOfGroup = (idGroup) => {
         reject(e);
       }
     } else {
+      const page = pagination.current || 1;
+      const limit = pagination.pageSize || 10;
       try {
         const data = await db.Via.findAll({
           attributes: {
             exclude: "updatedAt",
           },
+          include: {
+            model: db.GroupVia,
+            attributes: ["groupViaName"],
+          },
+          nest: true,
+          raw: true,
+          offset: (page - 1) * limit,
+          limit: limit,
         });
+        const totalCount = await db.Via.count();
+        // console.log(data);
         resolve({
           errCode: 0,
           data: data,
+          total: totalCount,
         });
       } catch (e) {
         console.log("user get all via err");
@@ -387,7 +434,7 @@ let getViaInfor = (idVia) => {
         data: response,
       });
     } catch (e) {
-      console.log("user get via by group id err");
+      console.log("getVia Infor err");
       reject(e);
     }
   });
@@ -447,7 +494,6 @@ let payMent = (data) => {
         limit: data.quantity,
       })
         .then((data) => {
-          console.log(data);
           data.forEach((item) => {
             products.push(item);
             listIdProduct.push(item.id);
@@ -473,8 +519,8 @@ let payMent = (data) => {
         });
       } else {
         // ----------- TRU TIEN ------
-        let isPay = await db.User.update(
-          { balance: user.balance - totalPayMent },
+        let isPay = await db.User.increment(
+          { balance: -totalPayMent },
           { where: { id: user.id } }
         );
         if (isPay.length > 0) {
@@ -500,7 +546,7 @@ let payMent = (data) => {
           });
           //    UPDATE STATUS SOLD PRODUCT
           await db.Product.update(
-            { status: "sold" },
+            { status: "sold", owner: data.email },
             {
               where: {
                 id: listIdProduct, // Same as using `id: { [Op.in]: [1,2,3] }`
@@ -519,15 +565,122 @@ let payMent = (data) => {
     }
   });
 };
+
+let viewTransaction = (email, current, pageSize) => {
+  return new Promise(async (resolve, reject) => {
+    const page = current || 1;
+    const limit = pageSize || 10;
+    try {
+      let user = await db.User.findOne({
+        where: { email: email },
+      });
+      if (user) {
+        let tempDetail = [];
+        let tempInfor = "";
+        let response = [];
+        await db.Transaction.findAll({
+          where: { userId: user.id },
+          attributes: {
+            exclude: ["id", "viaId", "updatedAt"],
+          },
+          offset: (page - 1) * limit,
+          limit: limit,
+          order: [["createdAt", "DESC"]],
+        })
+          .then((data) => {
+            data.forEach((item, index) => {
+              tempDetail = JSON.parse(item.detail);
+              tempDetail.map((item) => (tempInfor += item.information + "\n"));
+              data[index].detail = tempInfor.trim();
+            });
+            response = data;
+          })
+          .catch((error) => {
+            console.log("error transaction list");
+            resolve({
+              errCode: 1,
+              errMessage: "lỗi xử lý",
+            });
+          });
+        const totalCount = await db.Transaction.count({
+          where: { userId: user.id },
+        });
+        // response.map((item,index)=>{
+
+        // })
+        resolve({
+          errCode: 0,
+          data: response,
+          total: totalCount,
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "user Error!",
+        });
+      }
+    } catch (e) {
+      console.log("view Transaction err");
+      reject(e);
+    }
+  });
+};
+
+let viewDeposit = (email, current, pageSize) => {
+  return new Promise(async (resolve, reject) => {
+    const page = current || 1;
+    const limit = pageSize || 10;
+    try {
+      let user = await db.User.findOne({
+        where: { email: email },
+      });
+      if (user) {
+        let response = await db.Deposit.findAll({
+          where: { userId: user.id },
+          attributes: {
+            exclude: ["id", "userId", "updatedAt"],
+          },
+          offset: (page - 1) * limit,
+          limit: limit,
+          order: [["createdAt", "DESC"]],
+        });
+
+        const totalCount = await db.Deposit.count({
+          where: { userId: user.id },
+        });
+        // response.map((item,index)=>{
+
+        // })
+        resolve({
+          errCode: 0,
+          data: response,
+          total: totalCount,
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: "user Error!",
+        });
+      }
+    } catch (e) {
+      console.log("view Deposit err");
+      reject(e);
+    }
+  });
+};
 module.exports = {
   registerService: registerService,
   loginService: loginService,
   changePasswordService: changePasswordService,
   forGotPass: forGotPass,
+
   refreshTokenService: refreshTokenService,
   getAccountInfo: getAccountInfo,
   getAllViaOfGroup: getAllViaOfGroup,
   getViaInfor: getViaInfor,
   getAllGroupVia: getAllGroupVia,
   payMent: payMent,
+
+  viewTransaction: viewTransaction,
+  viewDeposit: viewDeposit,
 };
