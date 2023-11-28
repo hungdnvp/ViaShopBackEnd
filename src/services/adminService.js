@@ -57,31 +57,6 @@ let addGroupVia = (data) => {
     }
   });
 };
-let getAllGroupVia = () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const data = await db.GroupVia.findAll({
-        attributes: {
-          exclude: ["updatedAt"],
-        },
-      });
-      if (data) {
-        resolve({
-          errCode: 0,
-          data: data,
-        });
-      } else {
-        resolve({
-          errCode: 1,
-          errMessage: "account not found",
-        });
-      }
-    } catch (err) {
-      console.log("get all group via error");
-      reject(err);
-    }
-  });
-};
 let addVia = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -243,7 +218,6 @@ const publicMoney = (idUser, money, type) => {
 };
 module.exports = {
   getAllUserService: getAllUserService,
-  getAllGroupVia: getAllGroupVia,
   addGroupVia: addGroupVia,
   addVia: addVia,
   editVia: editVia,

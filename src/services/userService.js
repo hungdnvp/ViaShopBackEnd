@@ -439,32 +439,41 @@ let getViaInfor = (idVia) => {
     }
   });
 };
-let getAllGroupVia = () => {
+let getAllGroupVia = (groupViaId = null) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let data = await db.GroupVia.findAll({
-        attributes: {
-          exclude: ["updatedAt"],
-        },
-      });
-      if (data) {
-        data.forEach((item, index, arr) => {
-          if (item.image) {
-            arr[index].image = Buffer.from(item.image).toString("binary");
-          }
-          // console.log(item.image);
-        });
-
-        resolve({
-          errCode: 0,
-          data: data,
+      let data = null;
+      if (groupViaId) {
+        data = await db.GroupVia.findOne({
+          where: { id: groupViaId },
+          attributes: {
+            exclude: ["updatedAt"],
+          },
         });
       } else {
-        resolve({
-          errCode: 1,
-          errMessage: "account not found",
+        data = await db.GroupVia.findAll({
+          attributes: {
+            exclude: ["updatedAt"],
+          },
         });
+        if (data) {
+          data.forEach((item, index, arr) => {
+            if (item.image) {
+              arr[index].image = Buffer.from(item.image).toString("binary");
+            }
+            // console.log(item.image);
+          });
+        } else {
+          resolve({
+            errCode: 1,
+            errMessage: "account not found",
+          });
+        }
       }
+      resolve({
+        errCode: 0,
+        data: data,
+      });
     } catch (err) {
       console.log("get all group via error");
       reject(err);

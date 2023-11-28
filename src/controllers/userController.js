@@ -194,9 +194,11 @@ let getViaInfor = async (req, res) => {
   }
 };
 let getAllGroupVia = async (req, res) => {
+  let groupViaId = req.query.groupId || null;
   try {
-    let response = await userService.getAllGroupVia();
+    let response = await userService.getAllGroupVia(groupViaId);
     if (response?.errCode === 0) {
+      // console.log(response);
       return res.status(200).json(response.data);
     } else {
       return res

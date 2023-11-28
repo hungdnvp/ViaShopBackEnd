@@ -47,7 +47,7 @@ let addGroupVia = async (req, res) => {
 };
 let getAllGroupVia = async (req, res) => {
   try {
-    let response = await adminService.getAllGroupVia();
+    let response = await userService.getAllGroupVia();
     if (response?.errCode === 0) {
       return res.status(200).json(response.data);
     }
