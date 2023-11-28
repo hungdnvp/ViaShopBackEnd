@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "if0_35509436",
-    "password": "KDKPHwKta22",
-    "database": "if0_35509436_viashop",
-    "host": "sql300.infinityfree.com",
+    "username": "sql10665725",
+    "password": "leixFMi46C",
+    "database": "sql10665725",
+    "host": "sql10.freemysqlhosting.net",
     "dialect": "mysql",
     "logging": false,
     "query": { "raw": true },
