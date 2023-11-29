@@ -8,8 +8,8 @@ const pass_mysql = process.env.PASS_MYSQL;
 const user_postgre = process.env.USER_POSTGRE;
 const pass_postgre = process.env.PASS_POSTGRE;
 const host_postgre = process.env.HOST_POSTGRE;
-const sequelize = new Sequelize("sql10665725", user_mysql, pass_mysql, {
-  host: "sql10.freemysqlhosting.net",
+const sequelize = new Sequelize("viashop", user_mysql, pass_mysql, {
+  host: "127.0.0.1",
   dialect: "mysql",
   port: 3306,
   logging: false,

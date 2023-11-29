@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "sql10665725",
-    "password": "leixFMi46C",
-    "database": "sql10665725",
-    "host": "sql10.freemysqlhosting.net",
+    "username": "root",
+    "password": "Hung12345@",
+    "database": "viashop",
+    "host": "127.0.0.1",
     "dialect": "mysql",
     "logging": false,
     "query": { "raw": true },
