@@ -1,7 +1,7 @@
 {
   "development": {
     "username": "root",
-    "password": "Hung12345@",
+    "password": "011025",
     "database": "viashop",
     "host": "127.0.0.1",
     "dialect": "mysql",
@@ -18,9 +18,11 @@
   },
   "production": {
     "username": "root",
-    "password": null,
-    "database": "database_production",
+    "password": "Hung12345@",
+    "database": "viashop",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "query": { "raw": true },
+    "timezone": "+07:00"
   }
 }

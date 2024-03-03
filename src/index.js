@@ -16,7 +16,7 @@ let app = express();
 app.set("trust proxy", true);
 app.use(
   cors({
-    origin: process.env.URL_FONT_END,
+    origin: process.env.URL_FONTEND,
     credentials: true,
     allowedHeaders: [
       "set-cookie",

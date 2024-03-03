@@ -40,57 +40,77 @@ let hashPassword = (password) => {
 let registerService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
-      axios // =>>>>>>>>>> valid email api checker
-        .get(
-          `https://emailvalidation.abstractapi.com/v1/?api_key=395e56f28925475294ae17a7da7ce615&email=${data.email}`
-        )
-        .then(async (response) => {
-          if (response.status === 200) {
-            let check = response.data.is_smtp_valid.value;
-            if (check) {
-              let hashPass = await hashPassword(data.password);
-              await db.User.create({
-                email: data.email,
-                password: hashPass,
-                username: data.username,
-                phonenumber: data.phonenumber,
-                balance: 0,
-                role: "user",
-              });
-              const replaceMail = {
-                username: data.username,
-                email: data.email,
-                phonenumber: data.phonenumber,
-              };
-              const mailContent = mustache.render(
-                templateMailRegister,
-                replaceMail
-              );
-              await sendEmail(data.email, subjectMailRegister, mailContent);
-              resolve({
-                errCode: 0,
-                errMessage: "OK",
-              });
-            } else {
-              resolve({
-                errCode: -1,
-                errMessage: "Email không hợp lệ",
-              });
-            }
-          } else {
-            resolve({
-              errCode: -1,
-              errMessage: "Lỗi xử lí, vui lòng thử lại !!!",
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-          resolve({
-            errCode: -1,
-            errMessage: "Lỗi đăng kí",
-          });
-        });
+      // axios // =>>>>>>>>>> valid email api checker
+      //   .get(
+      //     `https://emailvalidation.abstractapi.com/v1/?api_key=395e56f28925475294ae17a7da7ce615&email=${data.email}`
+      //   )
+      //   .then(async (response) => {
+      //     if (response.status === 200) {
+      //       let check = response.data.is_smtp_valid.value;
+      //       if (check) {
+      //         let hashPass = await hashPassword(data.password);
+      //         await db.User.create({
+      //           email: data.email,
+      //           password: hashPass,
+      //           username: data.username,
+      //           phonenumber: data.phonenumber,
+      //           balance: 0,
+      //           role: "user",
+      //         });
+      //         const replaceMail = {
+      //           username: data.username,
+      //           email: data.email,
+      //           phonenumber: data.phonenumber,
+      //         };
+      //         const mailContent = mustache.render(
+      //           templateMailRegister,
+      //           replaceMail
+      //         );
+      //         await sendEmail(data.email, subjectMailRegister, mailContent);
+      //         resolve({
+      //           errCode: 0,
+      //           errMessage: "OK",
+      //         });
+      //       } else {
+      //         resolve({
+      //           errCode: -1,
+      //           errMessage: "Email không hợp lệ",
+      //         });
+      //       }
+      //     } else {
+      //       resolve({
+      //         errCode: -1,
+      //         errMessage: "Lỗi xử lí, vui lòng thử lại !!!",
+      //       });
+      //     }
+      //   })
+      //   .catch((error) => {
+      //     console.log(error);
+      //     resolve({
+      //       errCode: -1,
+      //       errMessage: "Lỗi đăng kí",
+      //     });
+      //   });
+      let hashPass = await hashPassword(data.password);
+      await db.User.create({
+        email: data.email,
+        password: hashPass,
+        username: data.username,
+        phonenumber: data.phonenumber,
+        balance: 0,
+        role: "user",
+      });
+      const replaceMail = {
+        username: data.username,
+        email: data.email,
+        phonenumber: data.phonenumber,
+      };
+      const mailContent = mustache.render(templateMailRegister, replaceMail);
+      await sendEmail(data.email, subjectMailRegister, mailContent);
+      resolve({
+        errCode: 0,
+        errMessage: "OK",
+      });
     } catch (e) {
       console.log("create user error");
       reject(e);

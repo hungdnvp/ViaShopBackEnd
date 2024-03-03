@@ -50,7 +50,7 @@ const authMiddleware = (req, res, next) => {
     "/api/forGotPass",
     "/api/confirmForGotPass",
   ];
-  if (nonCheckPath.includes(req.path) || req.path.includes("adminApi"))
+  if (nonCheckPath.includes(req.path) || req.path.includes("apiAdmin"))
     return next();
   else {
     const authHeader = req.headers?.authorization;

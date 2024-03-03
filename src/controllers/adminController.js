@@ -174,6 +174,17 @@ let publicMoney = async (req, res) => {
     });
   }
 };
+let getLabelDashboard = async (req, res) => {
+  try {
+    let response = await adminService.getLabelDashboard();
+    return res.status(200).json(response);
+  } catch (e) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   getAllUser: getAllUser,
   addGroupVia: addGroupVia,
@@ -185,4 +196,5 @@ module.exports = {
   bulkCreateProducts: bulkCreateProducts,
   viewProduct: viewProduct,
   publicMoney: publicMoney,
+  getLabelDashboard: getLabelDashboard,
 };

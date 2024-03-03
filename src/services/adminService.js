@@ -216,6 +216,30 @@ const publicMoney = (idUser, money, type) => {
     }
   });
 };
+const getLabelDashboard = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let totalUser = await db.User.count({
+        where: { role: "user" },
+      });
+      let totalDeposit = 100000000;
+      let totalSoldProduct = await db.Product.count({
+        where: { status: "sold" },
+      });
+      let totalDepositMonth = 99999999;
+      resolve({
+        errCode: 0,
+        totalUser,
+        totalDeposit,
+        totalSoldProduct,
+        totalDepositMonth,
+      });
+    } catch (e) {
+      console.log("get Label DashBoard err");
+      reject(e);
+    }
+  });
+};
 module.exports = {
   getAllUserService: getAllUserService,
   addGroupVia: addGroupVia,
@@ -225,4 +249,5 @@ module.exports = {
   bulkCreateProducts: bulkCreateProducts,
   viewProduct: viewProduct,
   publicMoney: publicMoney,
+  getLabelDashboard: getLabelDashboard,
 };

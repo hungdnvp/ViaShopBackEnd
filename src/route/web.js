@@ -36,29 +36,29 @@ let initWebRoutes = (app) => {
   // *********API********************// ADMIN????????????
 
   router.get(
-    "/adminApi/getAllUser",
+    "/apiAdmin/getAllUser",
     adminMiddleware,
     adminController.getAllUser
   );
   router.get(
-    "/adminApi/getAllGroupVia",
+    "/apiAdmin/getAllGroupVia",
     adminMiddleware,
     adminController.getAllGroupVia
   );
   router.post(
-    "/adminApi/addGroupVia",
+    "/apiAdmin/addGroupVia",
     adminMiddleware,
     adminController.addGroupVia
   );
-  router.post("/adminApi/addVia", adminMiddleware, adminController.addVia);
+  router.post("/apiAdmin/addVia", adminMiddleware, adminController.addVia);
   router.post(
-    "/adminApi/getAllVia",
+    "/apiAdmin/getAllVia",
     adminMiddleware,
     adminController.getAllVia
   );
-  router.post("/adminApi/editVia", adminMiddleware, adminController.editVia);
+  router.post("/apiAdmin/editVia", adminMiddleware, adminController.editVia);
   router.post(
-    "/adminApi/editGroupVia",
+    "/apiAdmin/editGroupVia",
     adminMiddleware,
     adminController.editGroupVia
   );
@@ -68,7 +68,7 @@ let initWebRoutes = (app) => {
     adminController.bulkCreateProducts
   );
   router.post(
-    "/adminApi/viewProduct",
+    "/apiAdmin/viewProduct",
     adminMiddleware,
     adminController.viewProduct
   );
@@ -76,6 +76,11 @@ let initWebRoutes = (app) => {
     "/apiAdmin/publicMoney",
     adminMiddleware,
     adminController.publicMoney
+  );
+  router.get(
+    "/apiAdmin/labelDashboard",
+    adminMiddleware,
+    adminController.getLabelDashboard
   );
   // ***************************      APP            ************//
   return app.use("/", router);
