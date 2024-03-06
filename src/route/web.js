@@ -32,6 +32,7 @@ let initWebRoutes = (app) => {
   router.post("/api/payMent", userController.payMent);
   router.get("/api/viewTransaction", userController.viewTransaction);
   router.get("/api/viewDeposit", userController.viewDeposit);
+  router.get("/api/publicMoney", userController.publicMoney);
 
   // *********API********************// ADMIN????????????
 

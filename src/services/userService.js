@@ -3,11 +3,11 @@ import bcrypt from "bcryptjs";
 import { createToken } from "../middleware/JWTAction";
 import sendEmail from "./emailService";
 import moment from "moment";
-import axios from "axios";
 require("dotenv").config();
 
 const mustache = require("mustache");
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const API_CHECK_BANKING = process.env.API_CHECK_BANKING;
 const jwt = require("jsonwebtoken");
 const salt = bcrypt.genSaltSync(10);
 const fs = require("fs");
@@ -697,6 +697,56 @@ let viewDeposit = (email, current, pageSize) => {
     }
   });
 };
+let publicMoney = (email, money, codeBanking) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(API_CHECK_BANKING);
+      const result = await response.json();
+      const currentDate = new Date(); // Lấy ngày hiện tại
+      const currentDateString = currentDate.toISOString().slice(0, 10);
+      let isOk = false;
+      // Kiểm tra dữ liệu ở đây
+      if (!result.error) {
+        let data = result.data;
+        for (let i = 0; i < data.length; i++) {
+          const item = data[i];
+          let date_banking = item["Ngày diễn ra"].split(" ")[0];
+          let description = item["Mô tả"];
+          if (
+            date_banking === currentDateString &&
+            description.includes(codeBanking)
+          ) {
+            console.log("cộng tiền");
+            isOk = true;
+            break;
+          }
+        }
+      }
+      if (isOk) {
+        let userInfo = await db.User.findOne({
+          where: { email: email },
+          attributes: {
+            exclude: ["password", "updatedAt", "role"],
+          },
+        });
+        if (userInfo) {
+          await db.Deposit.create({
+            userId: userInfo.id,
+            money: money,
+            typePublish: "user",
+          });
+          resolve({
+            errCode: 0,
+            errMessage: "OK",
+          });
+        }
+      }
+    } catch (error) {
+      console.log("public Money from User err");
+      reject(e);
+    }
+  });
+};
 module.exports = {
   registerService: registerService,
   loginService: loginService,
@@ -712,4 +762,6 @@ module.exports = {
 
   viewTransaction: viewTransaction,
   viewDeposit: viewDeposit,
+
+  publicMoney: publicMoney,
 };

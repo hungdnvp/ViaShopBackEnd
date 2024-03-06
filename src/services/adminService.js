@@ -211,7 +211,7 @@ const publicMoney = (idUser, money, type) => {
         errMessage: "OK",
       });
     } catch (e) {
-      console.log("public Money err");
+      console.log("public Money from admin err");
       reject(e);
     }
   });

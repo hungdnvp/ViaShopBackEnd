@@ -309,6 +309,30 @@ let viewDeposit = async (req, res) => {
     });
   }
 };
+let publicMoney = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+  let email = verifyToken(token)?.data.email || null;
+  let money = req.query.money;
+  let codeBanking = req.query.codeBanking;
+  if (!email || !money || !codeBanking) {
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+  try {
+    money = parseInt(money);
+    let response = await userService.publicMoney(email, money, codeBanking);
+    return res.status(200).json(response);
+  } catch (e) {
+    console.log("error public Money controler from user");
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   handleLogin: handleLogin,
   handleRegister: handleRegister,
@@ -325,4 +349,5 @@ module.exports = {
   payMent: payMent,
   viewTransaction: viewTransaction,
   viewDeposit: viewDeposit,
+  publicMoney: publicMoney,
 };
